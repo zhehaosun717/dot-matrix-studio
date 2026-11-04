@@ -3,8 +3,8 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
 export const metadata: Metadata = {
-  title: "Dot Motion Builder",
-  description: "A local-first visual editor for designing dot-matrix loading animations and exporting production-ready Web and SwiftUI code."
+  title: "Dot Matrix Studio",
+  description: "Desktop app for the iDotMatrix 32x32 Bluetooth LED panel: pixel animation editor, live sync, screen mirroring, panel colour calibration, and a local API / MCP server for AI agents to show their status."
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {

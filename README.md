@@ -134,7 +134,7 @@ scripts/                       测试、桌面构建、字体数据生成
 
 ## 致谢与许可
 
-- 本项目由 [LerSent001/dot-motion-builder](https://github.com/LerSent001/dot-motion-builder)（MIT）分叉而来，后来改成控制实体点阵屏的桌面应用，并改名为 Dot Matrix Studio（仓库原名 dot-motion-builder）。像素动画编辑器和 Toolcraft 界面组件仍沿用原项目代码，原项目的 Web/SwiftUI 代码导出功能也保留着，说明见 [README.en.md](./README.en.md#editor-code-export)。
+- 本项目由 [LerSent001/dot-motion-builder](https://github.com/LerSent001/dot-motion-builder)（MIT）分叉而来，后来改成控制实体点阵屏的桌面应用，并改名为 Dot Matrix Studio（仓库原名 dot-motion-builder）。像素动画编辑器和部分 Toolcraft 界面组件（只保留了应用实际用到的那些）仍沿用原项目代码，原项目的 Web/SwiftUI 代码导出功能也保留着，说明见 [README.en.md](./README.en.md#editor-code-export)。
 - Toolcraft UI 源码保留 Pixel Point 的 MIT 声明，见 [TOOLCRAFT_LICENSE.md](./TOOLCRAFT_LICENSE.md)。
 - 中文像素字体数据来自 TakWolf 的 [缝合像素字体 Fusion Pixel Font](https://github.com/TakWolf/fusion-pixel-font)（SIL OFL 1.1），许可全文见 [src/lib/agent-display/FONT-LICENSE.txt](./src/lib/agent-display/FONT-LICENSE.txt)。
 - 蓝牙协议参考 [8none1/idotmatrix](https://github.com/8none1/idotmatrix)、[derkalle4/python3-idotmatrix-client](https://github.com/derkalle4/python3-idotmatrix-client)、[markusressel/idotmatrix-api-client](https://github.com/markusressel/idotmatrix-api-client) 和 [DeskDot](https://github.com/shivpatel2468/idotmatrix) 的逆向与实测记录。

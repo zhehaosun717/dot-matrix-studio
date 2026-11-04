@@ -138,7 +138,7 @@ scripts/                       tests, desktop build, font data generation
 
 ## Credits and licenses
 
-- This project began as a fork of [LerSent001/dot-motion-builder](https://github.com/LerSent001/dot-motion-builder) (MIT) and was later turned into a desktop app that drives a physical panel, then renamed Dot Matrix Studio (the repository was formerly called dot-motion-builder). The pixel animation editor and the Toolcraft UI components still come from that project, as does the Web/SwiftUI code export described above.
+- This project began as a fork of [LerSent001/dot-motion-builder](https://github.com/LerSent001/dot-motion-builder) (MIT) and was later turned into a desktop app that drives a physical panel, then renamed Dot Matrix Studio (the repository was formerly called dot-motion-builder). The pixel animation editor and the Toolcraft UI components it uses (unused ones have been removed) still come from that project, as does the Web/SwiftUI code export described above.
 - Toolcraft UI source keeps Pixel Point's MIT notice; see [TOOLCRAFT_LICENSE.md](./TOOLCRAFT_LICENSE.md).
 - Chinese pixel glyphs come from TakWolf's [Fusion Pixel Font](https://github.com/TakWolf/fusion-pixel-font) (SIL OFL 1.1); full license in [src/lib/agent-display/FONT-LICENSE.txt](./src/lib/agent-display/FONT-LICENSE.txt).
 - Bluetooth protocol knowledge from [8none1/idotmatrix](https://github.com/8none1/idotmatrix), [derkalle4/python3-idotmatrix-client](https://github.com/derkalle4/python3-idotmatrix-client), [markusressel/idotmatrix-api-client](https://github.com/markusressel/idotmatrix-api-client) and [DeskDot](https://github.com/shivpatel2468/idotmatrix).
