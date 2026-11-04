@@ -785,10 +785,10 @@ export function EditorApp() {
       <div className="builder-topbar">
         <a
           className="github-entry"
-          href="https://github.com/LerSent001/dot-motion-builder"
+          href="https://github.com/zhehaosun717/dot-matrix-studio"
           target="_blank"
           rel="noreferrer"
-          aria-label="Open Dot Motion Builder on GitHub"
+          aria-label="Open Dot Matrix Studio on GitHub"
           title="GitHub"
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">

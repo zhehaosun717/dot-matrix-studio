@@ -1,6 +1,6 @@
 {
-  "name": "dot-motion-builder",
-  "description": "A local-first visual editor for designing dot-matrix loading animations and exporting production-ready Web and SwiftUI code.",
+  "name": "dot-matrix-studio",
+  "description": "Windows desktop app for the iDotMatrix 32x32 Bluetooth LED panel: pixel animation editor, live sync, screen mirroring, panel colour calibration, and an MCP / local API for AI agents to show their status.",
   "private": true,
   "version": "0.2.8",
   "type": "module",

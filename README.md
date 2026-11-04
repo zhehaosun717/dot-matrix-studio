@@ -4,7 +4,7 @@
 
 给 **iDotMatrix 32×32 蓝牙 LED 点阵屏** 用的 Windows 桌面应用：不用厂商 App，直接在电脑上画像素动画、实时同步到屏幕、把屏幕当副屏投屏，还能让 AI agent 通过 MCP 在屏上显示自己的工作状态和心情。
 
-**下载：** [最新版安装包](https://github.com/zhehaosun717/dot-motion-builder/releases/latest)（`Dot.Matrix.Studio.Setup.x.y.z.exe`）
+**下载：** [最新版安装包](https://github.com/zhehaosun717/dot-matrix-studio/releases/latest)（`Dot.Matrix.Studio.Setup.x.y.z.exe`）
 
 ## 能做什么
 
@@ -55,7 +55,7 @@
 
 ## 安装与使用
 
-1. 从 [Releases](https://github.com/zhehaosun717/dot-motion-builder/releases/latest) 下载安装包并运行。安装包没有代码签名，Windows SmartScreen 可能提示，选「更多信息 → 仍要运行」。
+1. 从 [Releases](https://github.com/zhehaosun717/dot-matrix-studio/releases/latest) 下载安装包并运行。安装包没有代码签名，Windows SmartScreen 可能提示，选「更多信息 → 仍要运行」。
 2. **先断开手机上的 iDotMatrix App**：点阵屏同一时间只接受一个蓝牙连接。
 3. 打开 Dot Matrix Studio，它会自动连接点阵屏。顶栏按钮：
    - **Agent 显示**：允许 AI agent 控制屏幕；
@@ -91,7 +91,7 @@ node "%APPDATA%\Dot Matrix Studio\mcp\cli.cjs" text "构建通过"
 其他程序（比如自己汇总多个 agent 状态的托盘工具）也可以直接调用本机 API：从 `%APPDATA%\Dot Matrix Studio\agent-api.json` 读出 `port` 和 `token`，把场景 JSON POST 到 `http://127.0.0.1:<port>/api/scene?source=hook`，请求头带 `x-matrix-token: <token>`。返回的 `data.shown` 为 `false` 表示场景被 agent 主动设置的画面暂时挡住，稍后重发即可。
 
 ```json
-{"kind": "status", "status": "working", "label": "Build", "color": "#D97757"}
+{"kind": "status", "status": "working", "label": "Build", "color": "#E8622C"}
 {"kind": "pixels", "frames": [[]], "palette": {}}
 ```
 
@@ -134,7 +134,7 @@ scripts/                       测试、桌面构建、字体数据生成
 
 ## 致谢与许可
 
-- 编辑器部分基于 [LerSent001/dot-motion-builder](https://github.com/LerSent001/dot-motion-builder)（MIT）开发；原项目的 Web/SwiftUI 代码导出功能仍然保留，说明见 [README.en.md](./README.en.md#editor-code-export)。
+- 本项目由 [LerSent001/dot-motion-builder](https://github.com/LerSent001/dot-motion-builder)（MIT）分叉而来，后来改成控制实体点阵屏的桌面应用，并改名为 Dot Matrix Studio（仓库原名 dot-motion-builder）。像素动画编辑器和 Toolcraft 界面组件仍沿用原项目代码，原项目的 Web/SwiftUI 代码导出功能也保留着，说明见 [README.en.md](./README.en.md#editor-code-export)。
 - Toolcraft UI 源码保留 Pixel Point 的 MIT 声明，见 [TOOLCRAFT_LICENSE.md](./TOOLCRAFT_LICENSE.md)。
 - 中文像素字体数据来自 TakWolf 的 [缝合像素字体 Fusion Pixel Font](https://github.com/TakWolf/fusion-pixel-font)（SIL OFL 1.1），许可全文见 [src/lib/agent-display/FONT-LICENSE.txt](./src/lib/agent-display/FONT-LICENSE.txt)。
 - 蓝牙协议参考 [8none1/idotmatrix](https://github.com/8none1/idotmatrix)、[derkalle4/python3-idotmatrix-client](https://github.com/derkalle4/python3-idotmatrix-client)、[markusressel/idotmatrix-api-client](https://github.com/markusressel/idotmatrix-api-client) 和 [DeskDot](https://github.com/shivpatel2468/idotmatrix) 的逆向与实测记录。

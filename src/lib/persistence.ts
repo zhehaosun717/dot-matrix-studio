@@ -1,5 +1,6 @@
 import { Project } from "@/types/dot-motion";
 
+// Keeps the pre-rename name on purpose: changing it would make every saved project unreadable.
 export const STORAGE_KEY = "dot-motion-builder.project.v9";
 
 type SaveListener = (ok: boolean) => void;

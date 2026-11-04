@@ -4,7 +4,7 @@
 
 A Windows desktop app for the **iDotMatrix 32×32 Bluetooth LED panel**. No vendor app needed: draw pixel animations on your computer, stream them live to the panel, mirror a screen onto it, and let AI agents show their work status and mood on it through MCP.
 
-**Download:** [latest installer](https://github.com/zhehaosun717/dot-motion-builder/releases/latest) (`Dot.Matrix.Studio.Setup.x.y.z.exe`)
+**Download:** [latest installer](https://github.com/zhehaosun717/dot-matrix-studio/releases/latest) (`Dot.Matrix.Studio.Setup.x.y.z.exe`)
 
 ## What it does
 
@@ -55,7 +55,7 @@ A hook CLI switches status automatically from agent lifecycle hooks (e.g. prompt
 
 ## Install and use
 
-1. Download the installer from [Releases](https://github.com/zhehaosun717/dot-motion-builder/releases/latest) and run it. It is unsigned, so Windows SmartScreen may ask: choose "More info → Run anyway".
+1. Download the installer from [Releases](https://github.com/zhehaosun717/dot-matrix-studio/releases/latest) and run it. It is unsigned, so Windows SmartScreen may ask: choose "More info → Run anyway".
 2. **Disconnect the iDotMatrix phone app first**: the panel accepts one Bluetooth connection at a time.
 3. Open Dot Matrix Studio; it connects to the panel by itself. Top bar:
    - **Agent Display**: let AI agents drive the panel;
@@ -91,7 +91,7 @@ node "%APPDATA%\Dot Matrix Studio\mcp\cli.cjs" text "构建通过"
 Other programs (say, a tray tool that merges several agents' states) can call the local API directly: read `port` and `token` from `%APPDATA%\Dot Matrix Studio\agent-api.json` and POST a scene as JSON to `http://127.0.0.1:<port>/api/scene?source=hook` with the header `x-matrix-token: <token>`. A response with `data.shown` set to `false` means a scene the agent chose is holding the panel for now; send it again a little later.
 
 ```json
-{"kind": "status", "status": "working", "label": "Build", "color": "#D97757"}
+{"kind": "status", "status": "working", "label": "Build", "color": "#E8622C"}
 {"kind": "pixels", "frames": [[]], "palette": {}}
 ```
 
@@ -138,7 +138,7 @@ scripts/                       tests, desktop build, font data generation
 
 ## Credits and licenses
 
-- The editor is based on [LerSent001/dot-motion-builder](https://github.com/LerSent001/dot-motion-builder) (MIT).
+- This project began as a fork of [LerSent001/dot-motion-builder](https://github.com/LerSent001/dot-motion-builder) (MIT) and was later turned into a desktop app that drives a physical panel, then renamed Dot Matrix Studio (the repository was formerly called dot-motion-builder). The pixel animation editor and the Toolcraft UI components still come from that project, as does the Web/SwiftUI code export described above.
 - Toolcraft UI source keeps Pixel Point's MIT notice; see [TOOLCRAFT_LICENSE.md](./TOOLCRAFT_LICENSE.md).
 - Chinese pixel glyphs come from TakWolf's [Fusion Pixel Font](https://github.com/TakWolf/fusion-pixel-font) (SIL OFL 1.1); full license in [src/lib/agent-display/FONT-LICENSE.txt](./src/lib/agent-display/FONT-LICENSE.txt).
 - Bluetooth protocol knowledge from [8none1/idotmatrix](https://github.com/8none1/idotmatrix), [derkalle4/python3-idotmatrix-client](https://github.com/derkalle4/python3-idotmatrix-client), [markusressel/idotmatrix-api-client](https://github.com/markusressel/idotmatrix-api-client) and [DeskDot](https://github.com/shivpatel2468/idotmatrix).
