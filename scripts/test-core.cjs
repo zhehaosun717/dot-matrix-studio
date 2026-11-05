@@ -10,7 +10,8 @@ Module._resolveFilename = function(name, ...args) {return resolve.call(this, nam
 require.extensions['.ts'] = (mod, filename) => mod._compile(ts.transpileModule(fs.readFileSync(filename, 'utf8'), {compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022}}).outputText, filename);
 
 const coreDir = path.join(root, 'src/core');
-const coreFiles = fs.readdirSync(coreDir).filter((f) => f.endsWith('.ts')).map((f) => path.join(coreDir, f));
+const coreFiles = fs.readdirSync(coreDir, {recursive: true}).filter((f) => f.endsWith('.ts')).map((f) => path.join(coreDir, f));
+assert(coreFiles.some((f) => f.includes(`${path.sep}document${path.sep}`)), 'subfolders of src/core are checked too');
 
 // Purity: core and everything it imports, transitively, stay free of React, zustand and browser APIs.
 const FORBIDDEN_MODULES = /^(react|react-dom|zustand|next)(\/|$)/;
@@ -37,7 +38,8 @@ while (queue.length) {
   }
   // Comments and types are stripped first, so prose mentioning "the canvas" or a DOM type in a comment is fine.
   const code = ts.transpileModule(source, {compilerOptions: {module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022, removeComments: true}}).outputText;
-  const hit = code.match(FORBIDDEN_GLOBALS);
+  // String contents (module paths such as "@/core/document/...", messages) are not code.
+  const hit = code.replace(/(["'`])(?:\\.|(?!\1)[^\\])*\1/g, '""').match(FORBIDDEN_GLOBALS);
   assert(!hit, `${rel} uses the browser API ${hit && hit[0]}`);
 }
 assert(seen.size > coreFiles.length, 'the dependency walk followed core imports');
