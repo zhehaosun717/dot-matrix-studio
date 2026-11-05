@@ -43,6 +43,8 @@ export function CanvasArtboard({
       tabIndex={0}
       data-artboard-interactive="true"
       data-artboard-id={loader.id}
+      aria-label={loader.sequenceId ? `${loader.name} ${(loader.sequenceIndex ?? 0) + 1}` : loader.name}
+      aria-current={selected ? "true" : undefined}
       className={`canvas-artboard${selected ? " is-selected" : ""}${sequenceSelected ? " is-sequence-selected" : ""}${dimmed ? " is-dimmed" : ""}`}
       style={{
         left: loader.artboard.x,

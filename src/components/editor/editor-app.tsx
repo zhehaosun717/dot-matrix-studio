@@ -176,7 +176,7 @@ export function EditorApp() {
       </section>
 
       <Sheet open={isExportOpen} onOpenChange={setIsExportOpen}>
-        <SheetContent className="export-drawer" closeLabel={t.closeExport} id="export-center" side="bottom">
+        <SheetContent className="export-drawer" closeLabel={t.closeExport} id="export-center" side="bottom" aria-label={t.exportFile}>
           <ExportPanel language={language} />
         </SheetContent>
       </Sheet>
