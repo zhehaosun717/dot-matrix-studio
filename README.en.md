@@ -116,7 +116,7 @@ pnpm desktop:dist     # Windows installer in release/
 pnpm test             # typecheck and all test suites
 ```
 
-Tests cover motion sampling, code export, GIF/PNG encoding and Bluetooth framing, live streaming (retries, late acks, mutual exclusion, cooldown), faces and Chinese text rendering, local API security checks, MCP tools end to end, drawing-tool geometry, layers and selections, the pure `src/core/` layer (a check that it stays free of React and browser APIs, cell shapes, grid transforms, layer operations), the editor store's public surface, loading saved projects (other versions are migrated; data that cannot be used is backed up unchanged, never simply overwritten), undo / redo (one stroke is one step, 500 ms coalescing, view changes not recorded), the new document model (every artboard renders to the panel byte for byte the same after migration), command-based undo (every command round-trips exactly; 300 random edits undo back to the start), and reading and writing .dms project files (exact round trips; malformed and randomly corrupted files are rejected without crashing).
+Tests cover motion sampling, code export, GIF/PNG encoding and Bluetooth framing, live streaming (retries, late acks, mutual exclusion, cooldown), faces and Chinese text rendering, local API security checks, MCP tools end to end, drawing-tool geometry, layers and selections, the pure `src/core/` layer (a check that it stays free of React and browser APIs, cell shapes, grid transforms, layer operations), the editor store's public surface, loading saved projects (other versions are migrated; data that cannot be used is backed up unchanged, never simply overwritten), undo / redo (one stroke is one step, 500 ms coalescing, view changes not recorded), the new document model (every artboard renders to the panel byte for byte the same after migration), command-based undo (every command round-trips exactly; 300 random edits undo back to the start), project files on disk (atomic saves with .bak, failures leave the old file intact, recent files, autosave), and reading and writing .dms project files (exact round trips; malformed and randomly corrupted files are rejected without crashing).
 
 The planned refactor (new data model, `.dms` project files, command-based undo, moving to Vite, and the upstream features proposed for removal) is described in [docs/refactor-plan.md](./docs/refactor-plan.md) (in Chinese).
 
@@ -152,7 +152,7 @@ src/
   lib/agent-display/           faces, status icons, pixel fonts (incl. Chinese), scenes
   lib/exporters/               Web/SwiftUI export (from the original editor)
   stores/                      editor and panel state; stores/editor/ holds the editor store's parts, one per area
-desktop/src/                   Electron main process: tray, auto-connect, local agent API, screen picker
+desktop/src/                   Electron main process: tray, auto-connect, local agent API, screen picker; project-files.ts reads and writes project files (not wired up yet)
 mcp/src/                       MCP server and hook CLI
 scripts/                       tests, desktop build, font data generation
 ```

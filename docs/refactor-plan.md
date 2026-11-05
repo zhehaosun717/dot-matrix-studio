@@ -361,6 +361,8 @@ export function frameToRgba(doc: Document, frameIndex: number): Uint8ClampedArra
 
 ### 6.2 读写都放在主进程，通过 IPC 暴露
 
+> **主进程这一侧的文件操作已实现（`feat/desktop-project-files`）**：`desktop/src/project-files.ts`，测试是 `scripts/test-project-files.cjs`。内容包括原子写入和 `.bak`、读取时限制大小、最近文件列表（Windows 下路径不区分大小写）、自动保存、旧版浏览器数据的备份（永不覆盖）。这部分只依赖 Node 的 fs，不依赖 Electron；下面的 IPC 接口和编辑器端还没有接上。
+
 在 `desktop/src/preload.ts` 的 `matrixDesktop` 桥上增加一组方法。只新增，不改动现有方法：
 
 ```ts
