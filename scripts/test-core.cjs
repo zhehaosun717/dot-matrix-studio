@@ -42,23 +42,11 @@ while (queue.length) {
 }
 assert(seen.size > coreFiles.length, 'the dependency walk followed core imports');
 
-// The old module paths are one-line forwarders to the very same functions.
-const forwarders = {
-  'src/lib/layers.ts': 'layers.ts',
-  'src/stores/layer-ops.ts': 'layer-ops.ts',
-  'src/lib/grid-tools.ts': 'grid-tools.ts',
-  'src/lib/grid-transforms.ts': 'grid-transforms.ts',
-  'src/lib/cell-shapes.ts': 'cell-shapes.ts',
-  'src/lib/text-cells.ts': 'text-cells.ts',
-  'src/lib/core/motion-sampler.ts': 'motion-sampler.ts',
-  'src/lib/core/timeline.ts': 'timeline.ts',
-  'src/lib/image-import.ts': 'image-pixels.ts'
-};
-for (const [oldPath, coreName] of Object.entries(forwarders)) {
-  const before = require(path.join(root, oldPath));
-  const core = require(path.join(coreDir, coreName));
-  assert(Object.keys(core).length > 0, `${coreName} exports something`);
-  for (const [name, value] of Object.entries(core)) assert.equal(before[name], value, `${oldPath} forwards ${name}`);
+// The modules moved to core live only there (the forwarders at their old paths are gone).
+const movedFrom = ['src/lib/layers.ts', 'src/stores/layer-ops.ts', 'src/lib/grid-tools.ts', 'src/lib/grid-transforms.ts', 'src/lib/cell-shapes.ts', 'src/lib/text-cells.ts', 'src/lib/core/motion-sampler.ts', 'src/lib/core/timeline.ts'];
+for (const oldPath of movedFrom) assert(!fs.existsSync(path.join(root, oldPath)), `${oldPath} is in src/core now`);
+for (const name of ['pixelsToCells', 'sampleFrameIndices', 'sequenceFps']) {
+  assert.equal(require('../src/lib/image-import.ts')[name], undefined, `${name} comes from core only`);
 }
 assert.equal(typeof require('../src/lib/image-import.ts').rasterizeImageFile, 'function', 'the browser decoder stays in lib');
 assert.equal(require('../src/core/image-pixels.ts').rasterizeImageFile, undefined, 'and is not part of core');
@@ -171,4 +159,4 @@ assert.equal(sampleBackground(styled('breathe'), 9, 0.25), sampleBackground(styl
 for (const mode of ['blink', 'linear', 'directional', 'wave', 'pulse']) assert.equal(typeof getAnimationSummary(mode), 'string');
 assert.equal(compileTimeline(loader).tracks.length, loader.pattern.activeCells.length, 'one track per lit cell');
 
-console.log(`PASS: core — purity of ${seen.size} modules, ${Object.keys(forwarders).length} forwarders, cell shapes, grid transforms, layers, layer ops, background motion.`);
+console.log(`PASS: core — purity of ${seen.size} modules, no copies at the old paths, cell shapes, grid transforms, layers, layer ops, background motion.`);

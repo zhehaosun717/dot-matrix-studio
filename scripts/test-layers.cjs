@@ -8,7 +8,7 @@ const root = path.resolve(__dirname, '..');
 const resolve = Module._resolveFilename;
 Module._resolveFilename = function(name, ...args) {return resolve.call(this, name.startsWith('@/') ? path.join(root, 'src', name.slice(2)) : name, ...args);};
 require.extensions['.ts'] = (mod, filename) => mod._compile(ts.transpileModule(fs.readFileSync(filename, 'utf8'), {compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022}}).outputText, filename);
-const L = require('../src/lib/layers.ts');
+const L = require('../src/core/layers.ts');
 
 const rows = 8, cols = 8;
 const at = (r, c) => r * cols + c;
@@ -90,7 +90,7 @@ assert.deepEqual(L.mirroredCells(at(1, 2), rows, cols, 'xy').sort((a, b) => a - 
 assert.deepEqual(L.mirroredCells(3 * 7 + 3, 7, 7, 'xy'), [24], 'the centre cell of an odd grid is its own mirror');
 
 // Loader-level operations: legacy drawings become a layer on first edit; flat cells always follow the layers.
-const ops = require('../src/stores/layer-ops.ts');
+const ops = require('../src/core/layer-ops.ts');
 const {createMockProject} = require('../src/lib/mock-project.ts');
 const legacy = structuredClone(createMockProject().loaders[0]);
 legacy.pattern.grid = {...legacy.pattern.grid, rows: 8, cols: 8};

@@ -1,4 +1,4 @@
-// Browser decoding (canvas, createImageBitmap, ImageDecoder) for image import; the pixel maths lives in @/core/image-pixels.
+// Browser decoding (canvas, createImageBitmap, ImageDecoder) for image import; the pixel maths is @/core/image-pixels.
 import {
   type ImportedRaster,
   type ImportFit,
@@ -7,8 +7,6 @@ import {
   sampleFrameIndices,
   sequenceFps
 } from "@/core/image-pixels";
-
-export * from "@/core/image-pixels";
 
 /** Decoded size cap (~60 MP): a tiny but huge-dimensioned PNG must not exhaust memory. */
 const MAX_IMPORT_PIXELS = 60_000_000;

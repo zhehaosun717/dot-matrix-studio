@@ -300,7 +300,7 @@ export function frameToRgba(doc: Document, frameIndex: number): Uint8ClampedArra
 | `canvas.background` / `previewMode`、`ProjectSettings` | 固定值 |
 | `Timeline` / `compileTimeline` | 只在测试里使用 |
 | `src/types/dot-motion.ts` 的文件名、`mock-project.ts` 里的 “Dot Motion Builder V1” | 名称遗留。`STORAGE_KEY` 与 `<dot-motion-loader>` 标签名有意保留，不要改 |
-| `src/lib/*.ts` 中转发到 `src/core/` 的 9 个旧路径 | 是为了不改测试而保留的。可以在一个单独的提交里把测试的 require 改成 `src/core/` 路径，然后删掉这些转发文件 |
+| ~~`src/lib/*.ts` 中转发到 `src/core/` 的旧路径~~ | 已在 `chore/remove-core-forwarders` 删除，测试直接 require `src/core/` |
 
 ---
 

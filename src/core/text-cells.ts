@@ -4,7 +4,6 @@ import { PixelCanvas, Rgb } from "@/lib/agent-display/pixel-canvas";
 
 /** large: the 10px pixel font with Chinese; small: the 3x5 font (Latin letters, digits, punctuation). */
 export type TextFont = "large" | "small";
-export const TEXT_FONTS: readonly TextFont[] = ["large", "small"];
 
 const LINE_GAP = 1;
 const INK: Rgb = [255, 255, 255];
