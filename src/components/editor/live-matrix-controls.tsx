@@ -5,6 +5,7 @@ import { getDesktopBridge } from "@/lib/desktop-bridge";
 import { buildMatrixGif } from "@/lib/idotmatrix/build-gif";
 import { describeMatrixStatus, matrixCopy } from "@/lib/idotmatrix/matrix-copy";
 import { isWebBluetoothAvailable } from "@/lib/idotmatrix/web-bluetooth";
+import { PanelStatus } from "@/components/editor/panel-status";
 import { Language } from "@/lib/ui-copy";
 import { useEditorStore, useSelectedLoader } from "@/stores/use-editor-store";
 import { useMatrixStore } from "@/stores/use-matrix-store";
@@ -47,16 +48,22 @@ export function LiveMatrixControls({ language }: LiveMatrixControlsProps) {
     void sendGif(buildMatrixGif(project, loader, { showInactive, gaps: pixelGaps, tuning }).gif);
   }
 
+  const statusChip = <PanelStatus status={status} deviceName={link?.name ?? null} language={language} />;
+
   if (!link) {
     return (
-      <Button type="button" className="toolbar-button" variant="outline" size="default" disabled={busy} title={statusText} onClick={() => void connect()}>
-        {copy.connectPanel}
-      </Button>
+      <>
+        {statusChip}
+        <Button type="button" className="toolbar-button" variant="outline" size="default" disabled={busy} title={statusText} onClick={() => void connect()}>
+          {copy.connectPanel}
+        </Button>
+      </>
     );
   }
 
   return (
     <>
+      {statusChip}
       {desktop ? (
         <Button
           type="button"

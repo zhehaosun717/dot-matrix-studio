@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { EditorCanvas } from "@/components/editor/editor-canvas";
 import { EditorTopbar } from "@/components/editor/editor-topbar";
 import { ExportPanel } from "@/components/editor/export-panel";
@@ -56,6 +56,24 @@ export function EditorApp() {
   }, [hydrate]);
 
   useEditorShortcuts(isExportOpen, language, setPreviewScope);
+
+  // A new artboard, frame or imported animation is selected but may land under the sidebar or off screen:
+  // bring it into view. Loading the saved project (hydration) is not a new artboard.
+  const loaderCount = project.loaders.length;
+  const seenCount = useRef<number | null>(null);
+  useEffect(() => {
+    if (!hydrated) return;
+    const previous = seenCount.current;
+    seenCount.current = loaderCount;
+    if (previous === null || loaderCount <= previous) return;
+    // The selected artboard itself: a new frame at the end of a long sequence must show, not the sequence's middle.
+    if (selectedLoader) {
+      const { x, y, width, height } = selectedLoader.artboard;
+      viewport.revealBounds({ left: x, top: y, width, height });
+    }
+    // Only a change in the number of artboards should move the view.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated, loaderCount]);
 
   const t = uiCopy[language];
 
@@ -119,6 +137,7 @@ export function EditorApp() {
 
       <SaveStatusBanner language={language} />
       <div className={`zoom-hud${viewport.showZoomHud ? " is-visible" : ""}`}>{Math.round(canvas.zoom * 100)}%</div>
+      {!hasSelection && previewScope === "none" ? <p className="canvas-hint">{t.selectArtboardHint}</p> : null}
       <div className="language-switch" aria-label="Language switch">
         <SegmentedControl
           ariaLabel="Language switch"
@@ -160,7 +179,7 @@ export function EditorApp() {
       </section>
 
       <Sheet open={isExportOpen} onOpenChange={setIsExportOpen}>
-        <SheetContent className="export-drawer" closeLabel={t.closeExport} id="export-center" side="bottom">
+        <SheetContent className="export-drawer" closeLabel={t.closeExport} id="export-center" side="bottom" aria-label={t.exportFile}>
           <ExportPanel language={language} />
         </SheetContent>
       </Sheet>

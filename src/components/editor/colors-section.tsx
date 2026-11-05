@@ -18,8 +18,8 @@ export function ColorsSection({ language, loader: editingLoader, collapsed, onCo
       title={t.colors}
       collapsible
       collapsed={collapsed}
-      collapseLabel={language === "cn" ? "收起颜色" : "Collapse colors"}
-      expandLabel={language === "cn" ? "展开颜色" : "Expand colors"}
+      collapseLabel={language === "cn" ? "收起颜色" : "Collapse colours"}
+      expandLabel={language === "cn" ? "展开颜色" : "Expand colours"}
       onCollapsedChange={onCollapsedChange}
     >
       <div className="toolcraft-control-stack">

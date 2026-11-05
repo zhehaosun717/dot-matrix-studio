@@ -103,7 +103,6 @@ export function AnimationSection({ language, loader: editingLoader, collapsed, o
                     onClick={() => setDirection(option.value)}
                     role="radio"
                     aria-checked={editingLoader.animation.direction === option.value}
-                    aria-pressed={editingLoader.animation.direction === option.value}
                     title={option.label}
                   >
                     <span aria-hidden="true" className="direction-picker__icon">{option.icon}</span>

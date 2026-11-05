@@ -217,3 +217,177 @@
   padding-inline: 5px;
   font-size: 10px;
 }
+
+/* Panel status in the top bar (connection, live mode, upload progress, errors) and its notice below. */
+.panel-status {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  max-width: 240px;
+  padding-inline: 10px;
+  overflow: hidden;
+  border: 1px solid var(--control-border);
+  border-radius: 6px;
+  background: var(--control-quiet);
+  color: var(--muted-strong);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.panel-status__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.panel-status__dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--muted-faint);
+}
+
+.panel-status--ok .panel-status__dot {
+  background: #3ddc84;
+}
+
+.panel-status--live {
+  border-color: var(--accent-border);
+  color: var(--accent-strong);
+}
+
+.panel-status--live .panel-status__dot {
+  background: #3ddc84;
+  box-shadow: 0 0 0 3px rgba(61, 220, 132, 0.18);
+}
+
+.panel-status--busy .panel-status__dot {
+  background: var(--accent-strong);
+  animation: panelStatusPulse 1s ease-in-out infinite;
+}
+
+.panel-status--warn {
+  border-color: rgba(255, 196, 87, 0.4);
+  color: #ffd58a;
+}
+
+.panel-status--warn .panel-status__dot {
+  background: #ffc457;
+}
+
+.panel-status--error {
+  border-color: rgba(255, 122, 122, 0.4);
+  color: var(--danger);
+}
+
+.panel-status--error .panel-status__dot {
+  background: var(--danger);
+}
+
+.panel-status__progress {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.panel-status__progress > span {
+  display: block;
+  height: 100%;
+  background: var(--accent-strong);
+  transition: width 160ms linear;
+}
+
+@keyframes panelStatusPulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.panel-status-notice {
+  position: fixed;
+  top: 60px;
+  right: 16px;
+  z-index: 50;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  max-width: min(420px, calc(100vw - 32px));
+  padding: 10px 12px 10px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--surface-3);
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.5;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.panel-status-notice--error {
+  border-color: rgba(255, 122, 122, 0.45);
+  background: #3a1b1d;
+  color: #ffe3e3;
+}
+
+.panel-status-notice--warn {
+  border-color: rgba(255, 196, 87, 0.45);
+  background: #3a2f17;
+  color: #ffeccc;
+}
+
+.panel-status-notice__close {
+  flex: none;
+  margin: -2px -4px 0 0;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.panel-status-notice__close:hover,
+.panel-status-notice__close:focus-visible {
+  opacity: 1;
+}
+
+@media (max-width: 1180px) {
+  /* Narrow windows: the dot and its tooltip stay, the notice still explains problems. */
+  .panel-status {
+    padding-inline: 9px;
+  }
+
+  .panel-status__label {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel-status--busy .panel-status__dot {
+    animation: none;
+  }
+}
+
+/* Shown while no artboard is selected (the settings sidebar is hidden then). */
+.canvas-hint {
+  position: absolute;
+  bottom: 68px;
+  left: 50%;
+  z-index: 11;
+  margin: 0;
+  padding: 6px 12px;
+  border: 1px solid var(--app-border);
+  border-radius: 999px;
+  background: rgba(21, 23, 30, 0.88);
+  color: var(--muted-strong);
+  font-size: 12px;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  pointer-events: none;
+}

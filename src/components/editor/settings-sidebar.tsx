@@ -62,7 +62,7 @@ export function SettingsSidebar({
   const t = uiCopy[language];
 
   return (
-    <aside className={`settings-sidebar${hasSelection ? " is-open" : " is-hidden"}${propertiesCollapsed ? " is-collapsed" : ""}`} data-artboard-interactive="true">
+    <section aria-label={t.settings} className={`settings-sidebar${hasSelection ? " is-open" : " is-hidden"}${propertiesCollapsed ? " is-collapsed" : ""}`} data-artboard-interactive="true">
       <Panel
         title={t.settings}
         className="settings-toolcraft-panel h-full max-h-none w-full rounded-lg"
@@ -146,6 +146,6 @@ export function SettingsSidebar({
         </PanelSection>
       ) : null}
       </Panel>
-    </aside>
+    </section>
   );
 }

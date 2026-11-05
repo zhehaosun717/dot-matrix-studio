@@ -45,8 +45,8 @@ export function SequenceGroupChrome({
             event.stopPropagation();
             onAddFrame();
           }}
-          aria-label={copy.addFrame}
-          title={copy.addFrame}
+          aria-label={copy.addFrameHint}
+          title={copy.addFrameHint}
         >
           <span>{copy.addFrame}</span>
         </button>
@@ -60,8 +60,8 @@ export function SequenceGroupChrome({
               event.stopPropagation();
               onRemoveFrame();
             }}
-            aria-label={copy.removeFrame}
-            title={copy.removeFrame}
+            aria-label={copy.removeFrameHint}
+            title={copy.removeFrameHint}
           >
             <span>{copy.removeFrame}</span>
           </button>

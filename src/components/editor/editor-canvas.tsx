@@ -103,6 +103,7 @@ export function EditorCanvas({
                 tabIndex={0}
                 data-artboard-interactive="true"
                 data-artboard-id={first.id}
+                aria-label={first.name}
                 className={`canvas-artboard canvas-artboard--sequence-preview${sequenceSelected ? " is-selected is-sequence-selected" : ""}`}
                 style={{
                   left: first.artboard.x,
