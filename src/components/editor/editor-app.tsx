@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { EditorCanvas } from "@/components/editor/editor-canvas";
 import { EditorTopbar } from "@/components/editor/editor-topbar";
 import { ExportPanel } from "@/components/editor/export-panel";
@@ -55,7 +55,15 @@ export function EditorApp() {
     hydrate();
   }, [hydrate]);
 
-  useEditorShortcuts(isExportOpen, language, setPreviewScope);
+  /** Brings an artboard into view; reads the latest view through a ref so keyboard handlers stay stable. */
+  const revealBoundsRef = useRef(viewport.revealBounds);
+  revealBoundsRef.current = viewport.revealBounds;
+  const revealArtboard = useCallback((loaderId: string) => {
+    const target = useEditorStore.getState().project.loaders.find((loader) => loader.id === loaderId);
+    if (target) revealBoundsRef.current({ left: target.artboard.x, top: target.artboard.y, width: target.artboard.width, height: target.artboard.height });
+  }, []);
+
+  useEditorShortcuts(isExportOpen, language, setPreviewScope, revealArtboard);
 
   // A new artboard, frame or imported animation is selected but may land under the sidebar or off screen:
   // bring it into view. Loading the saved project (hydration) is not a new artboard.

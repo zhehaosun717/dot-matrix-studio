@@ -3,6 +3,7 @@
 import { DotGridEditor } from "@/components/editor/dot-grid-editor";
 import { PreviewStage } from "@/components/editor/preview-stage";
 import type { PreviewScope } from "@/components/editor/use-canvas-layout";
+import type { OnionGhost } from "@/core/sequence-frames";
 import { LoaderComponent } from "@/types/dot-motion";
 
 /** One artboard on the canvas: its grid editor while selected, otherwise a preview. */
@@ -19,6 +20,8 @@ type CanvasArtboardProps = {
   canDelete: boolean;
   sequenceSelected: boolean;
   hideChrome?: boolean;
+  /** Onion skin of the neighbouring frames, on the selected frame of a sequence. */
+  ghosts?: ReadonlyMap<number, OnionGhost> | null;
 };
 
 export function CanvasArtboard({
@@ -33,7 +36,8 @@ export function CanvasArtboard({
   onDelete,
   canDelete,
   sequenceSelected,
-  hideChrome = false
+  hideChrome = false,
+  ghosts = null
 }: CanvasArtboardProps) {
   const previewingThis = previewMode === "all" || (previewMode === "selected" && selected);
 
@@ -102,7 +106,7 @@ export function CanvasArtboard({
       ) : null}
       <div className="canvas-artboard__frame">
         {(selected || sequenceSelected) && editable && !previewingThis ? (
-          <DotGridEditor loader={loader} onApplyCells={onApplyCells} variant="canvas" />
+          <DotGridEditor loader={loader} onApplyCells={onApplyCells} variant="canvas" ghosts={ghosts} />
         ) : (
           <PreviewStage
             loader={loader}

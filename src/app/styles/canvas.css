@@ -261,3 +261,149 @@
     transform: translateY(0) scale(1);
   }
 }
+
+/* The selected sequence's frames, docked over the bottom of the canvas, left of the settings sidebar. */
+.frame-strip {
+  position: absolute;
+  left: 16px;
+  right: 368px;
+  bottom: 70px;
+  z-index: 12;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.frame-strip__panel {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  background: rgba(21, 23, 30, 0.92);
+  box-shadow: 0 14px 38px -20px rgb(0 0 0 / 85%);
+  pointer-events: auto;
+}
+
+.frame-strip__count {
+  padding: 0 6px 0 2px;
+  color: var(--muted-strong);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.frame-strip__frames {
+  display: flex;
+  gap: 4px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  overflow-x: auto;
+  list-style: none;
+}
+
+.frame-strip__frame {
+  position: relative;
+  display: grid;
+  width: 48px;
+  height: 48px;
+  padding: 3px;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.frame-strip__frame:hover {
+  border-color: color-mix(in oklab, var(--accent-strong) 40%, transparent);
+}
+
+.frame-strip__frame.is-selected {
+  border-color: var(--accent-strong);
+  background: color-mix(in oklab, var(--accent) 16%, transparent);
+}
+
+.frame-strip__thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  image-rendering: pixelated;
+}
+
+.frame-strip__number {
+  position: absolute;
+  right: 4px;
+  bottom: 2px;
+  color: #fff;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  text-shadow: 0 0 3px rgb(0 0 0 / 90%), 0 0 1px rgb(0 0 0);
+}
+
+.frame-strip__button {
+  display: inline-flex;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 8px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted-strong);
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.frame-strip__button svg {
+  width: 18px;
+  height: 18px;
+}
+
+.frame-strip__button:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--accent) 10%, transparent);
+  color: var(--foreground);
+}
+
+.frame-strip__button--danger:hover:not(:disabled) {
+  background: rgb(239 68 68 / 14%);
+  color: #fca5a5;
+}
+
+.frame-strip__button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.frame-strip__button--toggle[aria-pressed="true"] {
+  border-color: color-mix(in oklab, var(--accent-strong) 50%, transparent);
+  background: color-mix(in oklab, var(--accent) 18%, transparent);
+  color: var(--foreground);
+}
+
+.frame-strip__frame:focus-visible,
+.frame-strip__button:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--accent-strong) 68%, transparent);
+  outline-offset: 2px;
+}
+
+.frame-strip__divider {
+  width: 1px;
+  height: 24px;
+  margin: 0 4px;
+  background: var(--app-border);
+}
+
+@media (max-width: 1200px) {
+  .frame-strip {
+    right: 16px;
+  }
+}

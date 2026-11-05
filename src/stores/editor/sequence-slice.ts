@@ -6,6 +6,9 @@ import { clamp, cloneGrid, sanitizeActiveCells, normalizeLoader } from "./normal
 import { ARTBOARD_SIZE, SEQUENCE_FRAME_GAP, findNearbyArtboardPosition, sortSequenceFrames, reindexSequenceLoaders } from "./artboards";
 import { createBlankCustomLoader } from "./project-helpers";
 
+/** The most frames a sequence can have. */
+export const MAX_SEQUENCE_FRAMES = 10;
+
 export type SequenceSlice = Pick<EditorState, "importSequence" | "addSequenceFrame" | "removeSequenceFrame">;
 
 export function createSequenceSlice(set: EditorSet, get: EditorGet): SequenceSlice {
@@ -35,18 +38,24 @@ export function createSequenceSlice(set: EditorSet, get: EditorGet): SequenceSli
       set({ project, selectedLoaderId: created[0].id });
       return created.map((loader) => ({ loaderId: loader.id, layerId: loader.pattern.activeLayerId ?? layerOps.baseLayerId(loader) }));
     },
-    addSequenceFrame: (sequenceId) =>
+    addSequenceFrame: (sequenceId, afterLoaderId) =>
       set((state) => {
         const frames = sortSequenceFrames(state.project.loaders, sequenceId);
-        if (!frames.length || frames.length >= 10) {
+        if (!frames.length || frames.length >= MAX_SEQUENCE_FRAMES) {
           return {};
         }
 
-        const base = frames[frames.length - 1];
+        // A copy of the given frame (the last one by default), placed right after it.
+        const base = afterLoaderId === undefined ? frames[frames.length - 1] : frames.find((frame) => frame.id === afterLoaderId);
+        if (!base) {
+          return {};
+        }
+        const baseIndex = base.sequenceIndex ?? frames.indexOf(base);
         const nextLoader = {
           ...createBlankCustomLoader(state.project.loaders.length, base, "sequence", sequenceId),
           name: base.name,
-          sequenceIndex: frames.length,
+          // Between the copied frame and the next one; reindexing turns it into a whole position.
+          sequenceIndex: baseIndex + 0.5,
           artboard: {
             x: base.artboard.x + ARTBOARD_SIZE + SEQUENCE_FRAME_GAP,
             y: base.artboard.y,
@@ -78,17 +87,28 @@ export function createSequenceSlice(set: EditorSet, get: EditorGet): SequenceSli
           selectedLoaderId: nextLoader.id
         };
       }),
-    removeSequenceFrame: (sequenceId) =>
+    removeSequenceFrame: (sequenceId, loaderId) =>
       set((state) => {
         const frames = sortSequenceFrames(state.project.loaders, sequenceId);
         if (frames.length <= 1) {
           return {};
         }
 
-        const target = frames[frames.length - 1];
-        const loaders = reindexSequenceLoaders(state.project.loaders.filter((loader) => loader.id !== target.id));
+        // The given frame (the last one by default); its neighbour takes its place in the selection.
+        const target = loaderId === undefined ? frames[frames.length - 1] : frames.find((frame) => frame.id === loaderId);
+        if (!target) {
+          return {};
+        }
+        const position = frames.indexOf(target);
+        // Frames are laid out from the first one: when it goes, the new first frame takes its place.
+        const newFirst = position === 0 ? frames[1] : null;
+        const loaders = reindexSequenceLoaders(
+          state.project.loaders
+            .filter((loader) => loader.id !== target.id)
+            .map((loader) => (loader.id === newFirst?.id ? { ...loader, artboard: { ...loader.artboard, x: target.artboard.x, y: target.artboard.y } } : loader))
+        );
         const remainingFrames = sortSequenceFrames(loaders, sequenceId);
-        const fallback = remainingFrames[remainingFrames.length - 1] ?? loaders[0];
+        const fallback = remainingFrames[Math.min(position, remainingFrames.length - 1)] ?? loaders[0];
         const project = {
           ...state.project,
           updatedAt: new Date().toISOString(),

@@ -1,6 +1,7 @@
 "use client";
 
 import { Language, uiCopy } from "@/lib/ui-copy";
+import { MAX_SEQUENCE_FRAMES } from "@/stores/editor/sequence-slice";
 
 /** Frame and sequence actions above a selected frame sequence. */
 type SequenceGroupChromeProps = {
@@ -39,7 +40,7 @@ export function SequenceGroupChrome({
           type="button"
           data-artboard-action="true"
           className="canvas-artboard__action canvas-artboard__action--text"
-          disabled={frameCount >= 10}
+          disabled={frameCount >= MAX_SEQUENCE_FRAMES}
           onPointerDown={(event) => event.stopPropagation()}
           onClick={(event) => {
             event.stopPropagation();
