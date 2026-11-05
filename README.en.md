@@ -118,6 +118,8 @@ pnpm test             # typecheck and all test suites
 
 Tests cover motion sampling, code export, GIF/PNG encoding and Bluetooth framing, live streaming (retries, late acks, mutual exclusion, cooldown), faces and Chinese text rendering, local API security checks, MCP tools end to end, drawing-tool geometry, layers and selections, and the pure `src/core/` layer (a check that it stays free of React and browser APIs, cell shapes, grid transforms, layer operations), and the editor store's public surface.
 
+The planned refactor (new data model, `.dms` project files, command-based undo, moving to Vite, and the upstream features proposed for removal) is described in [docs/refactor-plan.md](./docs/refactor-plan.md) (in Chinese).
+
 ## Editor code export
 
 The editor still exports self-contained code for each animation. The **Web** export is one dependency-free JavaScript file registering a `<dot-motion-loader>` Web Component (`pause()`, `play()`, `seek()`, `speed` attribute). The **SwiftUI** export is a standalone `DotMotionView.swift` for iOS 15+ / macOS 12+. Both keep the grid, mask, sequence order, shape, colours (including per-cell colours), glow, speed and sampled motion.
