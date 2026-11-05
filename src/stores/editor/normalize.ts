@@ -1,6 +1,7 @@
 /** Sanitising and migrating stored projects and loaders (stored data is untrusted). */
 import { normalizeCellShape } from "@/core/cell-shapes";
 import { MAX_GRID_SIZE, MIN_GRID_SIZE } from "@/lib/grid-limits";
+import { PROJECT_VERSION } from "@/lib/mock-project";
 import { getDefaultMotionConfig } from "@/lib/motion-presets";
 import * as layerOps from "@/core/layer-ops";
 import type { AnimationConfig, Direction, GridConfig, LoaderComponent, MotionPresetId, Project } from "@/types/dot-motion";
@@ -292,4 +293,31 @@ export function normalizeProject(project: Project): Project {
     },
     loaders: reindexSequenceLoaders(project.loaders.map((loader, index) => normalizeLoader(layerOps.sanitiseStoredLayers(loader), index)))
   };
+}
+
+/**
+ * Brings a project stored by another version up to this one, or null when nothing usable is in it.
+ * Artboards that cannot be read are left out (the caller keeps a backup of the stored text).
+ */
+export function migrateStoredProject(stored: Partial<Project>): Project | null {
+  if (!Array.isArray(stored.loaders)) return null;
+  const readable = stored.loaders.filter((loader, index) => {
+    try {
+      normalizeLoader(layerOps.sanitiseStoredLayers(loader), index);
+      return true;
+    } catch {
+      return false;
+    }
+  });
+  if (!readable.length) return null;
+  try {
+    return normalizeProject({
+      ...(stored as Project),
+      version: PROJECT_VERSION,
+      assets: { patterns: Array.isArray(stored.assets?.patterns) ? stored.assets.patterns : [], templates: [] },
+      loaders: readable
+    });
+  } catch {
+    return null;
+  }
 }
