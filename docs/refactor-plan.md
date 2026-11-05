@@ -469,6 +469,6 @@ export type Transaction = { label: string; commands: Command[]; source: "user" |
 每一步的通用验收方法（沿用 `refactor/cloud-cleanup` 的做法）：
 
 - `pnpm test` 全部通过；
-- 用 Playwright 对比 DOM 和截图快照；
+- 用 `pnpm qa:snapshot` 对比 DOM、截图、CSS 和一串编辑操作（用法见 README 的“开发”部分）；
 - 点阵屏输出用 `renderMatrixFrames` 逐字节比对；
 - 最后在本机真机上检查：实时同步、存到屏幕、投屏、agent 状态画面、安装包能否正常启动。
