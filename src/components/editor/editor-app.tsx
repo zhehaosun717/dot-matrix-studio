@@ -66,9 +66,11 @@ export function EditorApp() {
     const previous = seenCount.current;
     seenCount.current = loaderCount;
     if (previous === null || loaderCount <= previous) return;
-    const target = layout.selectedSequenceBounds
-      ?? (selectedLoader ? { left: selectedLoader.artboard.x, top: selectedLoader.artboard.y, width: selectedLoader.artboard.width, height: selectedLoader.artboard.height } : null);
-    if (target) viewport.revealBounds(target);
+    // The selected artboard itself: a new frame at the end of a long sequence must show, not the sequence's middle.
+    if (selectedLoader) {
+      const { x, y, width, height } = selectedLoader.artboard;
+      viewport.revealBounds({ left: x, top: y, width, height });
+    }
     // Only a change in the number of artboards should move the view.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated, loaderCount]);
