@@ -120,6 +120,22 @@ Tests cover motion sampling, code export, GIF/PNG encoding and Bluetooth framing
 
 The planned refactor (new data model, `.dms` project files, command-based undo, moving to Vite, and the upstream features proposed for removal) is described in [docs/refactor-plan.md](./docs/refactor-plan.md) (in Chinese).
 
+For refactors there is a visual regression check. It records the DOM and a screenshot of several screens and the CSS the page loads, then replays a fixed sequence of edits (brush, undo, shortcuts, dragging, sequences, ...) and records the DOM and the saved project after each. It needs Playwright: `npx playwright install chromium` and `pnpm add -D playwright` (or point `PLAYWRIGHT_MODULE` at an installed playwright).
+
+```bash
+pnpm build && pnpm qa:snapshot capture .qa/before
+```
+
+```bash
+pnpm build && pnpm qa:snapshot capture .qa/after
+```
+
+```bash
+pnpm qa:snapshot compare .qa/before .qa/after
+```
+
+Run the first on the code before the change and the second after it; compare lists every difference and exits non-zero when there is one.
+
 ## Editor code export
 
 The editor still exports self-contained code for each animation. The **Web** export is one dependency-free JavaScript file registering a `<dot-motion-loader>` Web Component (`pause()`, `play()`, `seek()`, `speed` attribute). The **SwiftUI** export is a standalone `DotMotionView.swift` for iOS 15+ / macOS 12+. Both keep the grid, mask, sequence order, shape, colours (including per-cell colours), glow, speed and sampled motion.

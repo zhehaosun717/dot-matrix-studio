@@ -120,6 +120,22 @@ pnpm test             # 类型检查 + 全部测试
 
 后续的重构计划（新数据模型、`.dms` 项目文件、命令式撤销、改用 Vite，以及建议删除的上游功能）见 [docs/refactor-plan.md](./docs/refactor-plan.md)。
 
+重构时可以用视觉回归检查确认界面没有变化。它会在几个界面状态下记录 DOM 和截图，记录页面加载的 CSS，并重放一串固定的编辑操作（画笔、撤销、快捷键、拖动、序列帧等），记下每一步之后的 DOM 和保存的作品。需要先装 Playwright：`npx playwright install chromium`，并 `pnpm add -D playwright`（或用 `PLAYWRIGHT_MODULE` 指向已安装的 playwright）。
+
+```bash
+pnpm build && pnpm qa:snapshot capture .qa/before
+```
+
+```bash
+pnpm build && pnpm qa:snapshot capture .qa/after
+```
+
+```bash
+pnpm qa:snapshot compare .qa/before .qa/after
+```
+
+第一条在改动前的代码上运行，第二条在改动后的代码上运行；有任何差异时 compare 会逐项列出，并以非 0 退出。
+
 ## 项目结构
 
 ```text
