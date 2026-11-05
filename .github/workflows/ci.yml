@@ -1,0 +1,51 @@
+# Type check, every test suite, the web build and the desktop bundles, on Linux and Windows.
+# Nothing here talks to a panel or starts Electron; those checks stay manual.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [feat/idotmatrix, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    env:
+      # The tests and bundles do not need the Electron binary itself.
+      ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check and tests
+        run: pnpm test
+
+      - name: Web build
+        run: pnpm build
+
+      - name: Desktop bundles (main, preload, MCP server and CLI; no installer)
+        run: node scripts/build-desktop.mjs --skip-web
