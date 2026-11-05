@@ -350,6 +350,11 @@ export function frameToRgba(doc: Document, frameIndex: number): Uint8ClampedArra
 
 ### 6.1 文件格式
 
+> **已实现（`feat/core-dms-format`）**：`src/core/document/dms-format.ts` 提供 `serializeWorkspace` / `parseWorkspace` 和逐级升级的框架，测试是 `scripts/test-dms.cjs`。实现里的两个决定：
+>
+> - cel 写成显式的 `{ frame, layer, ... }` 列表，不用内存里 `帧id:图层id` 形式的键。迁移生成的 id 本身可能含冒号（比如 `loader-initial:base`），拼起来的键没法可靠地拆回来。
+> - 读取时逐字段校验，任何问题都报出第一个出错字段的路径（比如 `documents[0].cels[3].pixels: …`），而且从不抛异常。颜色大小写、缺失的当前图层或当前帧可以放宽处理，其余不合规的内容一律拒绝。
+
 - 扩展名 `.dms`，UTF-8 JSON，内容就是 2.1 节的 `Workspace`。像素缓冲（`Uint16Array`）序列化为 base64 字符串，读取时还原。32×32 × 24 帧 × 若干图层，文件也只有几十 KB。
 - 顶层带 `format: "dot-matrix-studio"` 和 `formatVersion`。读取时先校验这两个字段，然后按 `formatVersion` 链式迁移（v1 → v2 → …），每一步都是 `src/core/migrate/` 中的纯函数。
 - 读入的数据视为不可信：沿用现在 `sanitizeLayer` / `normalize` 的做法，限制尺寸、校验颜色格式、限制调色板长度和像素下标范围。
