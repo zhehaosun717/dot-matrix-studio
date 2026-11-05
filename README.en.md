@@ -116,7 +116,7 @@ pnpm desktop:dist     # Windows installer in release/
 pnpm test             # typecheck and all test suites
 ```
 
-Tests cover motion sampling, code export, GIF/PNG encoding and Bluetooth framing, live streaming (retries, late acks, mutual exclusion, cooldown), faces and Chinese text rendering, local API security checks, MCP tools end to end, drawing-tool geometry, layers and selections, the pure `src/core/` layer (a check that it stays free of React and browser APIs, cell shapes, grid transforms, layer operations), the editor store's public surface, loading saved projects (other versions are migrated; data that cannot be used is backed up unchanged, never simply overwritten), undo / redo (one stroke is one step, 500 ms coalescing, view changes not recorded), the new document model (every artboard renders to the panel byte for byte the same after migration), and command-based undo (every command round-trips exactly; 300 random edits undo back to the start).
+Tests cover motion sampling, code export, GIF/PNG encoding and Bluetooth framing, live streaming (retries, late acks, mutual exclusion, cooldown), faces and Chinese text rendering, local API security checks, MCP tools end to end, drawing-tool geometry, layers and selections, the pure `src/core/` layer (a check that it stays free of React and browser APIs, cell shapes, grid transforms, layer operations), the editor store's public surface, loading saved projects (other versions are migrated; data that cannot be used is backed up unchanged, never simply overwritten), undo / redo (one stroke is one step, 500 ms coalescing, view changes not recorded), the new document model (every artboard renders to the panel byte for byte the same after migration), command-based undo (every command round-trips exactly; 300 random edits undo back to the start), and reading and writing .dms project files (exact round trips; malformed and randomly corrupted files are rejected without crashing).
 
 The planned refactor (new data model, `.dms` project files, command-based undo, moving to Vite, and the upstream features proposed for removal) is described in [docs/refactor-plan.md](./docs/refactor-plan.md) (in Chinese).
 
@@ -145,7 +145,7 @@ The editor still exports self-contained code for each animation. The **Web** exp
 ```text
 src/
   core/                        pure logic (no React, no browser): layers and layer ops, drawing geometry, grid transforms, cell shapes, text to pixels, image pixel maths, motion sampler
-  core/document/               the new document model (document -> frames x layers -> cels), conversion to and from today's projects, undoable edit commands; not wired into the editor yet
+  core/document/               the new document model (document -> frames x layers -> cels), conversion to and from today's projects, undoable edit commands, the .dms file format; not wired into the editor yet
   core/history.ts              command-based undo / redo (merging, gestures, step and memory limits); not wired into the editor yet
   components/editor/           canvas, inspector, drawing tools, iDotMatrix panel, live sync
   lib/idotmatrix/              32x32 rendering, GIF/PNG encoding, Bluetooth protocol and link, mirroring
