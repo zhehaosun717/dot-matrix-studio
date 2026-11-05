@@ -2,7 +2,7 @@
   "name": "dot-matrix-studio",
   "description": "Windows desktop app for the iDotMatrix 32x32 Bluetooth LED panel: pixel animation editor, live sync, screen mirroring, panel colour calibration, and an MCP / local API for AI agents to show their status.",
   "private": true,
-  "version": "0.2.8",
+  "version": "0.3.0",
   "type": "module",
   "packageManager": "pnpm@11.25.0",
   "scripts": {
