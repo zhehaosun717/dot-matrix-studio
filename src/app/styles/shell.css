@@ -373,3 +373,21 @@
     animation: none;
   }
 }
+
+/* Shown while no artboard is selected (the settings sidebar is hidden then). */
+.canvas-hint {
+  position: absolute;
+  bottom: 68px;
+  left: 50%;
+  z-index: 11;
+  margin: 0;
+  padding: 6px 12px;
+  border: 1px solid var(--app-border);
+  border-radius: 999px;
+  background: rgba(21, 23, 30, 0.88);
+  color: var(--muted-strong);
+  font-size: 12px;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  pointer-events: none;
+}

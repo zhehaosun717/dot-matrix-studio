@@ -137,6 +137,7 @@ export function EditorApp() {
 
       <SaveStatusBanner language={language} />
       <div className={`zoom-hud${viewport.showZoomHud ? " is-visible" : ""}`}>{Math.round(canvas.zoom * 100)}%</div>
+      {!hasSelection && previewScope === "none" ? <p className="canvas-hint">{t.selectArtboardHint}</p> : null}
       <div className="language-switch" aria-label="Language switch">
         <SegmentedControl
           ariaLabel="Language switch"
