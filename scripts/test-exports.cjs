@@ -1,6 +1,10 @@
 // Generate fixtures and verify edge cases. Output files are test artifacts only.
 require('./test-motion.cjs');
 const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+// Fixtures for the manual export QA scripts; /tmp on Linux and macOS, the user's temp folder on Windows.
+const qaFile = (name) => path.join(os.tmpdir(), name);
 const assert = require('node:assert/strict');
 const {createMockProject} = require('../src/lib/mock-project.ts');
 const {generateExportArtifact} = require('../src/lib/exporters/index.ts');
@@ -14,9 +18,9 @@ loader.animation.style = 'fisheye';
 loader.animation.inactiveStyle = 'ghost';
 loader.style.cellShape = 'hexagon';
 const customWeb = generateExportArtifact('web',project,loader);
-fs.writeFileSync('/tmp/DotMotionCustomQA.js',customWeb.content);
-fs.writeFileSync('/tmp/dot-motion-custom-qa.html',webFixture(customWeb.content));
-fs.writeFileSync('/tmp/DotMotionCustomQA.swift',generateExportArtifact('swift',project,loader).content);
+fs.writeFileSync(qaFile('DotMotionCustomQA.js'),customWeb.content);
+fs.writeFileSync(qaFile('dot-motion-custom-qa.html'),webFixture(customWeb.content));
+fs.writeFileSync(qaFile('DotMotionCustomQA.swift'),generateExportArtifact('swift',project,loader).content);
 loader.text = {...loader.text, enabled:true, content:'中文 " \\ </script><script>window.injected=true</script> 💙'};
 loader.style.cellShape = 'hexagon';
 const web = generateExportArtifact('web', project, loader);
@@ -25,11 +29,11 @@ assert(web.content.includes('width:48px'),'web component should default to 48px'
 assert(web.filename.endsWith('.js'),'web export should be JavaScript');
 assert(web.mimeType.startsWith('text/javascript'),'web export should use a JavaScript MIME type');
 assert(!web.content.includes('<!doctype html>'),'web export should not include a demo document');
-fs.writeFileSync('/tmp/dot-export-edge.html',webFixture(web.content));
+fs.writeFileSync(qaFile('dot-export-edge.html'),webFixture(web.content));
 const swift = generateExportArtifact('swift',project,loader);
 assert(!swift.content.includes('// Usage:'),'Swift output should not include usage comments');
 assert(!web.content.includes('<!-- Set width with CSS.'),'JavaScript output should not include usage comments');
-fs.writeFileSync('/tmp/DotMotionEdge.swift',swift.content);
+fs.writeFileSync(qaFile('DotMotionEdge.swift'),swift.content);
 for(const shape of ['rectangle','square','circle','diamond','hexagon','star']){
   loader.style.cellShape=shape;
   const data=buildMotionData(project,loader);
@@ -59,12 +63,12 @@ assert(singleFrameSequence.discrete,'a one-frame sequence must remain frame-base
 assert.equal(singleFrameSequence.duration,1/loader.animation.fps);
 project.loaders=[loader,second];
 const sequenceWeb = generateExportArtifact('web',project,loader);
-fs.writeFileSync('/tmp/dot-export-sequence.html',webFixture(sequenceWeb.content));
-fs.writeFileSync('/tmp/DotMotionSequence.swift',generateExportArtifact('swift',project,loader).content);
-fs.writeFileSync('/tmp/DotMotionSequenceQA.js',sequenceWeb.content);
-fs.writeFileSync('/tmp/dot-motion-sequence-qa.html',webFixture(sequenceWeb.content));
-fs.writeFileSync('/tmp/DotMotionSequenceQA.swift',generateExportArtifact('swift',project,loader).content);
+fs.writeFileSync(qaFile('dot-export-sequence.html'),webFixture(sequenceWeb.content));
+fs.writeFileSync(qaFile('DotMotionSequence.swift'),generateExportArtifact('swift',project,loader).content);
+fs.writeFileSync(qaFile('DotMotionSequenceQA.js'),sequenceWeb.content);
+fs.writeFileSync(qaFile('dot-motion-sequence-qa.html'),webFixture(sequenceWeb.content));
+fs.writeFileSync(qaFile('DotMotionSequenceQA.swift'),generateExportArtifact('swift',project,loader).content);
 loader.sequenceId=undefined;loader.pattern.activeCells=[];loader.animation.loop=false;
 assert(!buildMotionData(project,loader).scenes[0].cells.some(c=>c.active));
-fs.writeFileSync('/tmp/dot-export-empty.html',webFixture(generateExportArtifact('web',project,loader).content));
+fs.writeFileSync(qaFile('dot-export-empty.html'),webFixture(generateExportArtifact('web',project,loader).content));
 console.log('PASS: escaping, Unicode, six shapes, sequence order, empty mask and non-loop fixtures.');
