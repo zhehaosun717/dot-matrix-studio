@@ -1,0 +1,263 @@
+/* Canvas viewport, artboards and frame sequences. */
+.builder-canvas-shell {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.builder-canvas {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+  background-color: var(--canvas-bg);
+}
+
+.builder-canvas::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle, var(--canvas-dot) 1px, transparent 1.4px);
+  background-size: 24px 24px;
+  background-position: 0 0;
+}
+
+.builder-canvas.is-panning {
+  cursor: grabbing;
+}
+
+.canvas-center-button {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  z-index: 12;
+  display: grid;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid color-mix(in oklab, var(--border) 20%, transparent);
+  border-radius: 12px;
+  background: color-mix(in oklab, var(--background) 88%, transparent);
+  color: color-mix(in oklab, var(--foreground) 72%, transparent);
+  box-shadow: 0 14px 38px -20px rgb(0 0 0 / 85%);
+  backdrop-filter: blur(14px) saturate(130%);
+  cursor: pointer;
+  transform: translateX(-50%);
+  transition: border-color 150ms ease, background-color 150ms ease, color 150ms ease, transform 150ms ease;
+}
+
+.canvas-center-button:hover {
+  border-color: color-mix(in oklab, var(--accent-strong) 44%, transparent);
+  background: color-mix(in oklab, var(--accent) 10%, var(--background));
+  color: var(--foreground);
+}
+
+.canvas-center-button:active {
+  transform: translateX(-50%) scale(0.96);
+}
+
+.canvas-center-button:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--accent-strong) 68%, transparent);
+  outline-offset: 3px;
+}
+
+.canvas-center-button svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.builder-canvas__surface {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+.builder-canvas__surface.is-previewing .canvas-artboard.is-selected::after {
+  border-color: color-mix(in oklab, var(--accent-strong) 78%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--accent) 18%, transparent),
+    0 16px 36px color-mix(in oklab, var(--accent) 14%, transparent);
+}
+
+.canvas-artboard {
+  position: absolute;
+  padding: 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  overflow: visible;
+  animation: artboardSpringIn 500ms cubic-bezier(0.2, 1.28, 0.28, 1) both;
+}
+
+.canvas-artboard::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: 38px;
+  border: 2px solid transparent;
+  pointer-events: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
+  opacity: 0;
+}
+
+.canvas-artboard__frame {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  border-radius: 32px;
+  border: 1px solid transparent;
+  overflow: visible;
+  transition: background 160ms ease, box-shadow 160ms ease;
+}
+
+.canvas-artboard.is-selected::after {
+  opacity: 1;
+  border-color: color-mix(in oklab, var(--accent-strong) 92%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--accent) 22%, transparent),
+    0 18px 40px color-mix(in oklab, var(--accent) 18%, transparent);
+}
+
+.canvas-artboard.is-selected .canvas-artboard__frame {
+  background: rgba(51, 60, 74, 0.06);
+}
+
+.canvas-artboard.is-sequence-selected::after {
+  opacity: 0;
+}
+
+.canvas-artboard.is-sequence-selected .canvas-artboard__frame {
+  background: color-mix(in oklab, var(--accent) 5%, transparent);
+}
+
+.canvas-artboard--sequence-preview.is-selected::after {
+  opacity: 0;
+}
+
+.sequence-selection-outline {
+  position: absolute;
+  z-index: 3;
+  pointer-events: none;
+  border: 2px solid color-mix(in oklab, var(--accent-strong) 96%, transparent);
+  border-radius: 32px;
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--accent) 18%, transparent),
+    0 18px 56px color-mix(in oklab, var(--accent) 20%, transparent);
+}
+
+.sequence-group-chrome {
+  position: absolute;
+  z-index: 9;
+  pointer-events: none;
+}
+
+.sequence-group-chrome__actions {
+  pointer-events: auto;
+}
+
+.canvas-artboard.is-dimmed {
+  opacity: 0.24;
+}
+
+.canvas-artboard__actions {
+  position: absolute;
+  left: 50%;
+  top: -56px;
+  z-index: 8;
+  display: inline-flex;
+  gap: 8px;
+  padding: 6px;
+  border: 1px solid var(--app-border);
+  border-radius: 16px;
+  background: rgba(16, 18, 23, 0.9);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.24);
+  transform: translateX(-50%) scale(var(--inverse-canvas-zoom, 1));
+  transform-origin: center bottom;
+  backdrop-filter: blur(12px);
+}
+
+.canvas-artboard__action {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(245, 247, 250, 0.78);
+  cursor: pointer;
+}
+
+.canvas-artboard__action--text {
+  width: auto;
+  min-width: 84px;
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 720;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.canvas-artboard__action svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+.canvas-artboard__action:hover {
+  border-color: var(--accent-border);
+  background: rgba(215, 255, 90, 0.12);
+  color: var(--text);
+}
+
+.canvas-artboard__action--danger:hover {
+  border-color: rgba(255, 122, 122, 0.32);
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.canvas-artboard__action:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.dot-grid-editor-shell {
+  position: relative;
+}
+
+.dot-grid-editor-shell--canvas {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+}
+
+@keyframes artboardSpringIn {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.94);
+  }
+  68% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.012);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

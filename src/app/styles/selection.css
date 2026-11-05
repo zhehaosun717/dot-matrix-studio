@@ -1,0 +1,47 @@
+/* Selection box and symmetry guides. */
+/* Selection box and symmetry guides on the canvas. */
+.dot-grid__cell.is-selected {
+  outline: 1px solid rgba(140, 190, 255, 0.85);
+  outline-offset: 0;
+}
+
+.dot-grid__cell.is-selected:not(.is-active) {
+  background: rgba(90, 140, 230, 0.35) !important;
+}
+
+.dot-grid--sym-x,
+.dot-grid--sym-y,
+.dot-grid--sym-xy {
+  position: relative;
+}
+
+.dot-grid--sym-x::before,
+.dot-grid--sym-xy::before,
+.dot-grid--sym-y::after,
+.dot-grid--sym-xy::after {
+  position: absolute;
+  z-index: 2;
+  background: rgba(255, 196, 90, 0.7);
+  content: "";
+  pointer-events: none;
+}
+
+.dot-grid--sym-x::before,
+.dot-grid--sym-xy::before {
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+}
+
+.dot-grid--sym-y::after,
+.dot-grid--sym-xy::after {
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: 1px;
+}
+
+.dot-grid--tool-select .dot-grid__cell {
+  cursor: crosshair;
+}

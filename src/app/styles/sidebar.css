@@ -1,0 +1,151 @@
+/* Settings sidebar and its Toolcraft controls. */
+.settings-sidebar {
+  position: absolute;
+  top: 72px;
+  right: 16px;
+  bottom: 16px;
+  z-index: 8;
+  width: 336px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  opacity: 1;
+  transform: translateX(0);
+  transition:
+    width 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 420ms cubic-bezier(0.18, 1.28, 0.32, 1),
+    opacity 220ms ease;
+  will-change: transform, opacity;
+}
+
+.settings-sidebar.is-collapsed {
+  width: 52px;
+}
+
+.settings-toolcraft-panel {
+  box-shadow: 0 24px 64px -28px rgb(0 0 0 / 45%);
+}
+
+.settings-toolcraft-panel[data-collapsed="true"] {
+  min-width: 0;
+}
+
+.settings-toolcraft-panel [data-slot="properties-panel-header"] > p {
+  font-size: 12px;
+}
+
+.settings-toolcraft-panel [data-slot="panel-title"] {
+  font-size: 10px;
+}
+
+.settings-toolcraft-panel [data-control-field-label],
+.settings-toolcraft-panel [data-slot="field-label"],
+.settings-toolcraft-panel [data-slot="select-trigger"],
+.settings-toolcraft-panel [data-slot="input"],
+.settings-toolcraft-panel [data-slot="input-group-control"],
+.settings-toolcraft-panel [data-slot="input-group-text"],
+.settings-toolcraft-panel button {
+  font-size: 11px;
+}
+
+.settings-toolcraft-panel [data-slot="input-group-control"],
+.settings-toolcraft-panel [data-slot="input-group-text"] {
+  font-size: 10px;
+}
+
+.settings-sidebar.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(calc(100% + 28px));
+}
+
+.toolcraft-control-stack {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.toolcraft-control-stack[data-disabled="true"] {
+  opacity: 0.48;
+  pointer-events: none;
+}
+
+.toolcraft-direction-control {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.toolcraft-field-label {
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1rem;
+}
+
+.field-help {
+  margin: -6px 0 0;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  line-height: 1.45;
+  font-style: normal;
+}
+
+.direction-picker {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.direction-picker__item,
+.direction-picker__center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  place-items: center;
+  min-height: 36px;
+  padding: 0;
+}
+
+.direction-picker__item {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  width: 100%;
+  border-radius: 6px;
+  color: var(--muted-foreground);
+  cursor: pointer;
+}
+
+.direction-picker__center {
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 6px;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.18) 0 3px, transparent 4px),
+    rgba(255, 255, 255, 0.018);
+}
+
+.direction-picker__item.is-active {
+  border-color: color-mix(in oklab, var(--primary) 72%, transparent);
+  background: color-mix(in oklab, var(--primary) 18%, transparent);
+  color: var(--link);
+}
+
+.direction-picker__icon {
+  display: block;
+  color: currentColor;
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.motion-preview-button {
+  width: 100%;
+  margin-top: 0;
+}

@@ -1,0 +1,91 @@
+/* Save status banner and the layers panel. */
+/* Shown while the project cannot be saved (browser storage full). */
+.save-status-banner {
+  position: fixed;
+  top: 64px;
+  left: 50%;
+  z-index: 50;
+  max-width: min(560px, calc(100vw - 32px));
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #5a1d1d;
+  color: #ffe3e3;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  transform: translateX(-50%);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+/* Layers panel. */
+.layers-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.layers-panel__list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  max-height: 240px;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.layers-panel__row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+}
+
+.layers-panel__row.is-active {
+  border-color: var(--primary);
+  background: color-mix(in oklab, var(--primary) 14%, transparent);
+}
+
+.layers-panel__row.is-hidden .layers-panel__name {
+  opacity: 0.45;
+}
+
+.layers-panel__eye {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.layers-panel__name,
+.layers-panel__rename {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  height: 28px;
+  padding: 0 8px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 0.82rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.layers-panel__rename {
+  border: 1px solid var(--app-border);
+  background: color-mix(in oklab, var(--input) 10%, transparent);
+  cursor: text;
+}
+
+.layers-panel__count {
+  color: var(--app-muted);
+  font-size: 0.72rem;
+}

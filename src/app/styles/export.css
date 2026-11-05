@@ -1,0 +1,149 @@
+/* Export drawer and panel export. */
+.export-drawer {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 50;
+  display: flex;
+  height: min(68svh, 680px);
+  min-height: min(420px, 100svh);
+  max-height: 100svh;
+  overflow: hidden;
+  border-radius: 8px 8px 0 0;
+  background: var(--background);
+}
+
+.export-drawer [data-slot="sheet-close"] {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  z-index: 2;
+}
+
+.panel--export {
+  display: flex;
+  width: 100%;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  margin: 0;
+  padding: 18px 20px 20px;
+  background: transparent;
+}
+
+.panel__header,
+.panel__actions,
+.export-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.panel__header {
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.panel--export .panel__eyebrow {
+  margin-bottom: 4px;
+  font-size: 0.64rem;
+}
+
+.panel--export .panel__header h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.16;
+  letter-spacing: -0.02em;
+}
+
+.export-platform-control {
+  width: min(320px, 100%);
+  margin-bottom: 12px;
+}
+
+.export-meta {
+  margin-bottom: 10px;
+  color: var(--app-muted);
+  font-size: 0.78rem;
+}
+
+.export-code {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: auto;
+  scrollbar-width: none;
+  padding: 10px;
+  border-radius: 14px;
+  background: rgba(5, 7, 10, 0.86);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 0.76rem;
+  line-height: 1.55;
+}
+
+.export-code::-webkit-scrollbar {
+  display: none;
+}
+
+.panel--export .panel__actions {
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.panel--export .panel__actions button {
+  min-width: 118px;
+  min-height: 38px;
+}
+
+.panel--export .export-platform-control {
+  width: min(420px, 100%);
+}
+
+.matrix-export {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  align-items: flex-start;
+  gap: 20px;
+  overflow: auto;
+}
+
+.matrix-preview {
+  flex: 0 0 auto;
+  width: min(256px, 100%);
+  height: auto;
+  aspect-ratio: 1;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  background: #050607;
+}
+
+.matrix-export__side {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 240px;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.matrix-export__status,
+.matrix-export__note {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.matrix-export__status {
+  color: var(--muted-strong);
+}
+
+.matrix-export__note {
+  color: var(--danger);
+}
+
+.matrix-export .panel__actions {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
