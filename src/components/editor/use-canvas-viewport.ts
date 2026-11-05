@@ -118,7 +118,16 @@ export function useCanvasViewport({ loaders, canvas, sequenceGroups, selectedLoa
         bottom = Math.min(bottom, stripRect.top - viewportRect.top - 16);
       }
     }
-    return { left: edgePadding, right, top: 64, bottom };
+    // The open panel preview sits at the top left of the canvas.
+    let left = edgePadding;
+    const preview = document.querySelector<HTMLElement>(".panel-preview:not(.is-collapsed)");
+    if (preview) {
+      const previewRect = preview.getBoundingClientRect();
+      if (previewRect.top < viewportRect.bottom && previewRect.bottom > viewportRect.top && previewRect.right < viewportRect.left + viewportRect.width / 2) {
+        left = Math.max(left, previewRect.right - viewportRect.left + 24);
+      }
+    }
+    return { left, right, top: 64, bottom };
   }
 
   /**
