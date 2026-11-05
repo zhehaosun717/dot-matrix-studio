@@ -9,9 +9,9 @@ Module._resolveFilename = function(name, ...args) {return resolve.call(this, nam
 require.extensions['.ts'] = (mod, filename) => mod._compile(ts.transpileModule(fs.readFileSync(filename, 'utf8'), {compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020}}).outputText, filename);
 const {createMockProject} = require('../src/lib/mock-project.ts');
 const {motionPresets, getDefaultMotionConfig} = require('../src/lib/motion-presets.ts');
-const {sampleMotion, getCycleDuration} = require('../src/lib/core/motion-sampler.ts');
+const {sampleMotion, getCycleDuration} = require('../src/core/motion-sampler.ts');
 const {getCanvasGridMetrics} = require('../src/lib/canvas-grid-metrics.ts');
-const {compileTimeline} = require('../src/lib/core/timeline.ts');
+const {compileTimeline} = require('../src/core/timeline.ts');
 const {generateExportArtifact} = require('../src/lib/exporters/index.ts');
 const {buildMotionData} = require('../src/lib/exporters/motion-data.ts');
 let checks = 0;

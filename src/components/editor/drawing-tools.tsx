@@ -6,7 +6,6 @@ import { Language } from "@/lib/ui-copy";
 import { redo, undo, useHistoryStore } from "@/stores/editor-history";
 import { copySelection, cutSelection, deleteSelection, nudgeDrawing, pasteSelection } from "@/components/editor/selection-actions";
 import { Symmetry, SYMMETRIES, useDrawStore } from "@/stores/use-draw-store";
-import { useEditorStore } from "@/stores/use-editor-store";
 import { LoaderComponent } from "@/types/dot-motion";
 import { Button } from "@/toolcraft/ui/components/primitives/button";
 import { SwitchControl } from "@/toolcraft/ui/components/controls/boolean/boolean-controls";

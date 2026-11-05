@@ -116,9 +116,25 @@ pnpm desktop:dist     # Windows installer in release/
 pnpm test             # typecheck and all test suites
 ```
 
-Tests cover motion sampling, code export, GIF/PNG encoding and Bluetooth framing, live streaming (retries, late acks, mutual exclusion, cooldown), faces and Chinese text rendering, local API security checks, MCP tools end to end, drawing-tool geometry, layers and selections, and the pure `src/core/` layer (a check that it stays free of React and browser APIs, cell shapes, grid transforms, layer operations), and the editor store's public surface.
+Tests cover motion sampling, code export, GIF/PNG encoding and Bluetooth framing, live streaming (retries, late acks, mutual exclusion, cooldown), faces and Chinese text rendering, local API security checks, MCP tools end to end, drawing-tool geometry, layers and selections, the pure `src/core/` layer (a check that it stays free of React and browser APIs, cell shapes, grid transforms, layer operations), the editor store's public surface, loading saved projects (other versions are migrated; data that cannot be used is backed up unchanged, never simply overwritten), undo / redo (one stroke is one step, 500 ms coalescing, view changes not recorded), the new document model (every artboard renders to the panel byte for byte the same after migration), and command-based undo (every command round-trips exactly; 300 random edits undo back to the start).
 
 The planned refactor (new data model, `.dms` project files, command-based undo, moving to Vite, and the upstream features proposed for removal) is described in [docs/refactor-plan.md](./docs/refactor-plan.md) (in Chinese).
+
+For refactors there is a visual regression check. It records the DOM and a screenshot of several screens and the CSS the page loads, then replays a fixed sequence of edits (brush, undo, shortcuts, dragging, sequences, ...) and records the DOM and the saved project after each. It needs Playwright: `npx playwright install chromium` and `pnpm add -D playwright` (or point `PLAYWRIGHT_MODULE` at an installed playwright).
+
+```bash
+pnpm build && pnpm qa:snapshot capture .qa/before
+```
+
+```bash
+pnpm build && pnpm qa:snapshot capture .qa/after
+```
+
+```bash
+pnpm qa:snapshot compare .qa/before .qa/after
+```
+
+Run the first on the code before the change and the second after it; compare lists every difference and exits non-zero when there is one.
 
 ## Editor code export
 
@@ -129,6 +145,8 @@ The editor still exports self-contained code for each animation. The **Web** exp
 ```text
 src/
   core/                        pure logic (no React, no browser): layers and layer ops, drawing geometry, grid transforms, cell shapes, text to pixels, image pixel maths, motion sampler
+  core/document/               the new document model (document -> frames x layers -> cels), conversion to and from today's projects, undoable edit commands; not wired into the editor yet
+  core/history.ts              command-based undo / redo (merging, gestures, step and memory limits); not wired into the editor yet
   components/editor/           canvas, inspector, drawing tools, iDotMatrix panel, live sync
   lib/idotmatrix/              32x32 rendering, GIF/PNG encoding, Bluetooth protocol and link, mirroring
   lib/agent-display/           faces, status icons, pixel fonts (incl. Chinese), scenes

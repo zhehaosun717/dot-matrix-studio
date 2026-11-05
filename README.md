@@ -116,15 +116,33 @@ pnpm desktop:dist     # 生成 Windows 安装包到 release/
 pnpm test             # 类型检查 + 全部测试
 ```
 
-测试覆盖：动效采样、代码导出、GIF/PNG 编码与蓝牙分包、实时推流（重试、迟到确认、互斥、冷却）、表情与中文渲染、本机 API 安全检查、MCP 工具端到端调用、绘图工具几何计算、图层与选区，以及 `src/core/` 纯逻辑层（不依赖 React 和浏览器 API 的检查、格子形状、网格变换、图层操作）和编辑器 store 的对外接口。
+测试覆盖：动效采样、代码导出、GIF/PNG 编码与蓝牙分包、实时推流（重试、迟到确认、互斥、冷却）、表情与中文渲染、本机 API 安全检查、MCP 工具端到端调用、绘图工具几何计算、图层与选区、`src/core/` 纯逻辑层（不依赖 React 和浏览器 API 的检查、格子形状、网格变换、图层操作）、编辑器 store 的对外接口、读取已保存作品（其他版本的作品会被迁移，读不了的数据先原样备份，绝不直接覆盖）、撤销 / 重做（一笔算一步、500ms 内合并、只改视图不记录）、新数据模型（迁移前后每个画板在点阵屏上的渲染逐字节一致），以及命令式撤销（每种命令都能精确往返，300 步随机操作全部撤销后能回到起点）。
 
 后续的重构计划（新数据模型、`.dms` 项目文件、命令式撤销、改用 Vite，以及建议删除的上游功能）见 [docs/refactor-plan.md](./docs/refactor-plan.md)。
+
+重构时可以用视觉回归检查确认界面没有变化。它会在几个界面状态下记录 DOM 和截图，记录页面加载的 CSS，并重放一串固定的编辑操作（画笔、撤销、快捷键、拖动、序列帧等），记下每一步之后的 DOM 和保存的作品。需要先装 Playwright：`npx playwright install chromium`，并 `pnpm add -D playwright`（或用 `PLAYWRIGHT_MODULE` 指向已安装的 playwright）。
+
+```bash
+pnpm build && pnpm qa:snapshot capture .qa/before
+```
+
+```bash
+pnpm build && pnpm qa:snapshot capture .qa/after
+```
+
+```bash
+pnpm qa:snapshot compare .qa/before .qa/after
+```
+
+第一条在改动前的代码上运行，第二条在改动后的代码上运行；有任何差异时 compare 会逐项列出，并以非 0 退出。
 
 ## 项目结构
 
 ```text
 src/
   core/                        纯逻辑（不依赖 React 和浏览器）：图层与图层操作、绘图几何、网格变换、格子形状、文字转像素、图片像素计算、动效采样器
+  core/document/               新数据模型（文档 → 帧 × 图层 → cel）、与现有项目的双向转换、可撤销的编辑命令，尚未接入编辑器
+  core/history.ts              命令式撤销 / 重做（合并、手势、步数和内存上限），尚未接入编辑器
   components/editor/           画布、属性面板、绘图工具、iDotMatrix 面板、实时同步
   lib/idotmatrix/              32x32 渲染、GIF/PNG 编码、蓝牙协议与连接、投屏
   lib/agent-display/           表情、状态图标、像素字体（含中文）、场景

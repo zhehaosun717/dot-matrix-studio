@@ -45,11 +45,20 @@ Project
 4. **撤销靠整份快照。** `editor-history.ts` 每一步都保存整个 `Project`，最多 100 份。
 5. **存储有隐患。**
    - 作品只存在 localStorage 里，按“源”隔离，也就是 `http://127.0.0.1:<端口>`。`desktop/src/main.ts` 在 47321 端口被占用时会改用随机端口，这时编辑器换了源，之前的作品就“看不到”了（数据还在，只是读不到）。
-   - `hydrate()`（`src/stores/editor/project-slice.ts`）在存储里的 `version` 不等于 `PROJECT_VERSION`（目前是 `"0.17.0"`）时，**会直接用示例项目覆盖存储**。一旦以后提升版本号，用户的作品就会被清掉。这个问题在迁移方案里必须先修掉。
+   - `hydrate()`（`src/stores/editor/project-slice.ts`）原来在存储里的 `version` 不等于 `PROJECT_VERSION`（目前是 `"0.17.0"`）时，**会直接用示例项目覆盖存储**；存储里的文字不是合法 JSON 时也一样。**已在 `fix/hydrate-keeps-projects` 修复**，见 3.1 节。
 
 ---
 
 ## 2. 新数据模型
+
+> **已实现（`feat/core-document-model`）**：类型、合成和双向转换都在 `src/core/document/` 里，测试是 `scripts/test-document.cjs`，**以代码为准**。实现与下面草案的差异：
+>
+> - 像素用 `Uint16Array`，不用 `Uint8Array`：导入一张不减色的照片时，32×32 的文档可能有上千种颜色。
+> - cel 用 `visible?: false` 表示“只在这一帧隐藏”，不用 `opacity`：调色板下标没法做半透明混合。
+> - `Frame` 多了可选的 `name`：导入动图时，每帧原本的名字（GIF 1、GIF 2……）需要保留。
+> - `Document` 用 `playback: "frames" | "motion"` 区分逐帧动画和程序化动效，`motion` 始终存在，并且多了 `fps`。序列帧的背景呼吸效果（`inactiveStyle`）同样要读这些设置。
+> - `RenderStyle` 只保留渲染时真正读取的字段，加上 `cellSize`；`symmetry` 去掉了，因为对称是绘图状态，从来不在作品里保存。
+> - 帧时长保存精确值 `1000 / fps`，不取整：取整后 30 fps 以上的帧率就还原不回来了。
 
 借鉴 Aseprite 的结构：**Document（尺寸、调色板）→ frames[]（每帧时长）× layers[] → cel（每个“帧 × 图层”格子一块像素缓冲）**。合成结果只作为派生数据计算，不持久化。
 
@@ -187,7 +196,15 @@ export function frameToRgba(doc: Document, frameIndex: number): Uint8ClampedArra
 
 ### 3.1 先修掉“版本不符就覆盖”的问题
 
-在做任何迁移之前，单独提交一个小改动：版本不符时**不覆盖**存储，而是先原样备份，再按版本链迁移。否则未来任何一次版本号提升都会清空作品。这个改动在当前模型下就可以做，而且应该最先做。
+**已修复（`fix/hydrate-keeps-projects`）。** 现在的行为：
+
+- 版本一致：照常读取，存储不动。
+- 版本不一致或存储里的文字不是项目：先把原文原样复制到 `dot-motion-builder.project.v9.backup.<旧版本或 unreadable>.<时间>`，每份备份用新键、永不覆盖。
+- 版本不一致时，用 `migrateStoredProject` 尽量迁移：读得了的画板全部保留，读不了的画板跳过；一个都读不了才退回示例项目。
+- 存储满了、连备份都写不进去时，原文留在原处不被覆盖：每次保存都会先重试备份，失败就报告保存失败（界面上出现保存失败横幅），直到腾出空间备份成功为止。
+- 测试：`scripts/test-persistence.cjs`。
+
+以后转换到 `.dms` 时也沿用同样的原则：先原样备份，再迁移，迁移失败也不删除原数据。
 
 ### 3.2 映射规则
 
@@ -218,7 +235,7 @@ export function frameToRgba(doc: Document, frameIndex: number): Uint8ClampedArra
 
 1. **按位置对齐图层。** 第 k 帧的第 i 个图层对应新模型的第 i 个图层。图层名取第一个有这个位置图层的帧；图层数取所有帧中的最大值。
 2. **cel**：第 k 帧第 i 个图层的像素（连同 `offsetX / offsetY`）成为 `cels[celKey(frame_k, layer_i)]`。像素先算出包围盒，再存成 `x / y / width / height`，越界的像素原样保留。如果某帧在这个位置没有图层，就不生成 cel。
-3. **可见性**：新图层只要在任意一帧里可见，就标记为 `visible: true`；在某帧里原本隐藏的，对应 cel 设成 `opacity: 0`。这样每一帧合成出来的画面与迁移前完全一样。
+3. **可见性**：新图层只要在任意一帧里可见，就标记为 `visible: true`；在某帧里原本隐藏的，对应 cel 设成 `visible: false`。这样每一帧合成出来的画面与迁移前完全一样。
 4. **共享属性**：大多数 style 和 grid 的 setter 本来就带 `updateSequence`，各帧的值是一致的，统一取第一帧的值。如果检测到不一致，记录到迁移报告里，不报错。
 5. **动效**：序列帧在界面上不显示动效预设（`!editingLoader.sequenceId`），所以序列迁移后不设 `effect`。
 6. **帧顺序和画板位置**：第一帧的 `artboard.x / y` 作为 Document 的 `position`。原来各帧横向排开的布局由编辑器的“帧条”显示代替（属于界面改动，另行设计）。
@@ -292,7 +309,7 @@ export function frameToRgba(doc: Document, frameIndex: number): Uint8ClampedArra
 | `canvas.background` / `previewMode`、`ProjectSettings` | 固定值 |
 | `Timeline` / `compileTimeline` | 只在测试里使用 |
 | `src/types/dot-motion.ts` 的文件名、`mock-project.ts` 里的 “Dot Motion Builder V1” | 名称遗留。`STORAGE_KEY` 与 `<dot-motion-loader>` 标签名有意保留，不要改 |
-| `src/lib/*.ts` 中转发到 `src/core/` 的 9 个旧路径 | 是为了不改测试而保留的。可以在一个单独的提交里把测试的 require 改成 `src/core/` 路径，然后删掉这些转发文件 |
+| ~~`src/lib/*.ts` 中转发到 `src/core/` 的旧路径~~ | 已在 `chore/remove-core-forwarders` 删除，测试直接 require `src/core/` |
 
 ---
 
@@ -333,7 +350,7 @@ export function frameToRgba(doc: Document, frameIndex: number): Uint8ClampedArra
 
 ### 6.1 文件格式
 
-- 扩展名 `.dms`，UTF-8 JSON，内容就是 2.1 节的 `Workspace`。`Uint8Array` 序列化为 base64 字符串，读取时还原。32×32 × 24 帧 × 若干图层，文件也只有几十 KB。
+- 扩展名 `.dms`，UTF-8 JSON，内容就是 2.1 节的 `Workspace`。像素缓冲（`Uint16Array`）序列化为 base64 字符串，读取时还原。32×32 × 24 帧 × 若干图层，文件也只有几十 KB。
 - 顶层带 `format: "dot-matrix-studio"` 和 `formatVersion`。读取时先校验这两个字段，然后按 `formatVersion` 链式迁移（v1 → v2 → …），每一步都是 `src/core/migrate/` 中的纯函数。
 - 读入的数据视为不可信：沿用现在 `sanitizeLayer` / `normalize` 的做法，限制尺寸、校验颜色格式、限制调色板长度和像素下标范围。
 
@@ -398,6 +415,13 @@ type ProjectFilesBridge = {
 
 ### 7.2 设计
 
+> **已实现（`feat/core-history`）**：`src/core/history.ts` 是通用的历史管理器，`src/core/document/commands.ts` 是作用在 Workspace 上的命令，测试是 `scripts/test-history.cjs`。两者都还没有接入编辑器，**以代码为准**。实现与下面草案的差异：
+>
+> - 历史是不可变的值：`commit` / `undo` / `redo` 都接收 `(history, state)`，返回新的 `{ history, state }`。
+> - “合并”的做法是把命令追加进上一步：撤销时按相反顺序逐条还原，不需要每种命令自己实现合并。
+> - 一步被撤销、重做，或者所在的手势已经结束后，就标为“关闭”，之后的提交不会再并入这一步。
+> - 删除类命令（`removeLayer`、`removeFrame`、`removeDocument`）由构造函数从当前 workspace 里取出要删除的内容，这样 `revert` 能原样放回去。
+
 ```ts
 /** 一次可撤销的修改。apply / revert 都是纯函数，输入输出都是不可变的 Workspace。 */
 export interface Command {
@@ -450,7 +474,7 @@ export type Transaction = { label: string; commands: Command[]; source: "user" |
 
 每一步都是独立的 PR，都要在本机 Windows 和真实点阵屏上验收后再合并。
 
-1. **修复 `hydrate` 版本不符时覆盖作品的问题**（3.1 节）。改动小，风险高、收益大，应该最先做。
+1. ~~修复 `hydrate` 版本不符时覆盖作品的问题~~（3.1 节，已修复）。
 2. **决定第 4 节的删除清单**，按项分别提 PR，删除功能和删除相关测试断言放在同一个 PR 里，逐条说明。先删掉不要的东西，新模型就能更小。
 3. **新数据模型和迁移函数**，只在 `src/core/` 里实现，包括 `compositeFrame`、`documentToLoader` 和 `migrate`，并有完整测试，不接入界面。
 4. **store 切换到新模型**：渲染器通过 `documentToLoader` 适配，`idotmatrix/` 不改动。在真机上验证实时同步、存到屏幕和 agent 状态画面。
@@ -461,6 +485,6 @@ export type Transaction = { label: string; commands: Command[]; source: "user" |
 每一步的通用验收方法（沿用 `refactor/cloud-cleanup` 的做法）：
 
 - `pnpm test` 全部通过；
-- 用 Playwright 对比 DOM 和截图快照；
+- 用 `pnpm qa:snapshot` 对比 DOM、截图、CSS 和一串编辑操作（用法见 README 的“开发”部分）；
 - 点阵屏输出用 `renderMatrixFrames` 逐字节比对；
 - 最后在本机真机上检查：实时同步、存到屏幕、投屏、agent 状态画面、安装包能否正常启动。

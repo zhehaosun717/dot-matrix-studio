@@ -8,7 +8,7 @@ const root = path.resolve(__dirname, '..');
 const resolve = Module._resolveFilename;
 Module._resolveFilename = function(name, ...args) {return resolve.call(this, name.startsWith('@/') ? path.join(root, 'src', name.slice(2)) : name, ...args);};
 require.extensions['.ts'] = (mod, filename) => mod._compile(ts.transpileModule(fs.readFileSync(filename, 'utf8'), {compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022}}).outputText, filename);
-const {cellsOnLine, cellsInRect, floodFill, floodFillWhere, colorsWithinTolerance, isPointOnCells, cellAtPoint} = require('../src/lib/grid-tools.ts');
+const {cellsOnLine, cellsInRect, floodFill, floodFillWhere, colorsWithinTolerance, isPointOnCells, cellAtPoint} = require('../src/core/grid-tools.ts');
 
 const cols = 8, rows = 8;
 const at = (r, c) => r * cols + c;
@@ -48,7 +48,7 @@ const keyOf = cell => (lit.has(cell) ? colours[cell] ?? '#PRIMARY' : 'off');
 assert.deepEqual(floodFill(at(0, 0), lit, rows, cols, keyOf).sort((a, b) => a - b), [at(0, 0), at(0, 1)], 'fill stops at a different colour');
 
 // Image import: pixels -> lit cells with their colours; transparent and near-black stay off.
-const {pixelsToCells} = require('../src/lib/image-import.ts');
+const {pixelsToCells} = require('../src/core/image-pixels.ts');
 const rgba = new Uint8ClampedArray(2 * 2 * 4);
 rgba.set([255, 0, 0, 255], 0);        // red
 rgba.set([0, 0, 0, 255], 4);          // black -> off (an unlit LED)
@@ -59,7 +59,7 @@ assert.deepEqual(imported.cells, [0, 3]);
 assert.deepEqual(imported.colors, {0: '#FF0000', 3: '#FAFAFA'});
 
 // Static preset: every cell fully lit at all times (for still pixel art and imported images).
-const {sampleMotion} = require('../src/lib/core/motion-sampler.ts');
+const {sampleMotion} = require('../src/core/motion-sampler.ts');
 const {createMockProject} = require('../src/lib/mock-project.ts');
 const {getDefaultMotionConfig, motionPresets} = require('../src/lib/motion-presets.ts');
 assert(motionPresets.some(p => p.id === 'static'), 'static preset is offered');
@@ -91,7 +91,7 @@ assert.equal(isPointOnCells(100 + 2 * (10 + gridExtent + 1), 50 + 2 * (10 + 5), 
 assert.equal(isPointOnCells(100 + 2 * (10 + gridExtent + 6), 50 + 2 * (10 + 5), geometry), false, 'right padding is not');
 
 // Shapes: outline rectangles, ellipses, lines through shapeCells.
-const {cellsInEllipse, shapeCells, isShapeTool} = require('../src/lib/grid-tools.ts');
+const {cellsInEllipse, shapeCells, isShapeTool} = require('../src/core/grid-tools.ts');
 const sorted = list => [...list].sort((a, b) => a - b);
 assert.deepEqual(sorted(cellsInRect(at(1, 1), at(3, 4), cols, false)), sorted([at(1, 1), at(1, 2), at(1, 3), at(1, 4), at(2, 1), at(2, 4), at(3, 1), at(3, 2), at(3, 3), at(3, 4)]), 'outline rectangle is its border');
 assert.equal(cellsInRect(at(1, 1), at(1, 1), cols, false).length, 1, 'a one-cell outline is that cell');
@@ -106,7 +106,7 @@ assert.deepEqual(shapeCells('rect', at(0, 0), at(2, 2), cols, false).length, 8);
 assert(isShapeTool('ellipse') && !isShapeTool('fill'));
 
 // Whole-drawing transforms keep colours with their cells; nudges drop what leaves the grid.
-const {transformPattern} = require('../src/lib/grid-transforms.ts');
+const {transformPattern} = require('../src/core/grid-transforms.ts');
 const drawing = {cells: [at(0, 0), at(0, 1), at(2, 7)], colors: {[at(0, 1)]: '#FF0000'}};
 const tf = op => transformPattern(drawing.cells, drawing.colors, rows, cols, op);
 assert.deepEqual(tf('right'), {activeCells: [at(0, 1), at(0, 2)], cellColors: {[at(0, 2)]: '#FF0000'}}, 'nudge right drops the cell at the edge');
@@ -118,7 +118,7 @@ const back = transformPattern(tf('rotate-cw').activeCells, tf('rotate-cw').cellC
 assert.deepEqual(back, {activeCells: drawing.cells, cellColors: drawing.colors}, 'rotate there and back is lossless');
 
 // Image import processing: black cut, colour reduction, dithering, frame sampling.
-const {sampleFrameIndices, sequenceFps} = require('../src/lib/image-import.ts');
+const {sampleFrameIndices, sequenceFps} = require('../src/core/image-pixels.ts');
 const strip = new Uint8ClampedArray(4 * 4 * 4);
 for (let i = 0; i < 16; i++) strip.set([i * 16, i * 8, 255 - i * 16, 255], i * 4);
 assert.equal(pixelsToCells(strip, 4, 4).cells.length, 16, 'every visible pixel is lit');
@@ -139,7 +139,7 @@ assert.equal(sequenceFps(2000, 24), 12, '24 frames over 2 s play at 12 fps');
 assert.equal(sequenceFps(100, 24), 20, 'clamped to what the panel plays');
 
 // Text tool: the built-in pixel fonts, wrapped and centred on the grid.
-const {textToCells} = require('../src/lib/text-cells.ts');
+const {textToCells} = require('../src/core/text-cells.ts');
 const hi = textToCells('HI', 8, 8, 'small');
 assert(hi.length > 0 && hi.every(c => c >= 0 && c < 64), 'small text lands inside the grid');
 const hiRows = new Set(hi.map(c => Math.floor(c / 8)));

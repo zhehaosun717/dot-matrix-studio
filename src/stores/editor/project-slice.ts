@@ -1,8 +1,8 @@
 /** Project and artboards: loading, selection, adding / copying / deleting / moving artboards, view and export settings. */
 import { createMockProject, PROJECT_VERSION } from "@/lib/mock-project";
-import { loadProject, saveProject } from "@/lib/persistence";
+import { backupStoredProject, keepStoredProjectUntilBackedUp, readStoredProject, saveProject } from "@/lib/persistence";
 import type { EditorState, EditorSet, EditorGet } from "./types";
-import { normalizeProject } from "./normalize";
+import { migrateStoredProject, normalizeProject } from "./normalize";
 import { findNearbyArtboardPosition, reindexSequenceLoaders } from "./artboards";
 import { createBlankCustomLoader, cloneLoader, updateSelectedLoader } from "./project-helpers";
 
@@ -13,9 +13,9 @@ export type ProjectSlice = Pick<EditorState, "hydrate" | "selectLoader" | "clear
 export function createProjectSlice(set: EditorSet, get: EditorGet): ProjectSlice {
   return {
     hydrate: () => {
-      const persisted = loadProject();
-      if (persisted && persisted.version === PROJECT_VERSION) {
-        const normalized = normalizeProject(persisted);
+      const stored = readStoredProject();
+      if (stored.kind === "ok" && stored.project.version === PROJECT_VERSION) {
+        const normalized = normalizeProject(stored.project);
         set({
           hydrated: true,
           project: normalized,
@@ -25,11 +25,18 @@ export function createProjectSlice(set: EditorSet, get: EditorGet): ProjectSlice
         return;
       }
 
-      saveProject(initialProject);
+      // A project from another version, or text that is not a project: copy it aside before anything
+      // replaces it. Until that copy exists, saving leaves it alone (and the save banner says so).
+      if (stored.kind !== "empty") {
+        const label = stored.kind === "ok" ? `v${String(stored.project.version ?? "unknown")}` : "unreadable";
+        if (!backupStoredProject(stored.raw, label)) keepStoredProjectUntilBackedUp(stored.raw, label);
+      }
+      const project = (stored.kind === "ok" ? migrateStoredProject(stored.project) : null) ?? initialProject;
+      saveProject(project);
       set({
         hydrated: true,
-        project: initialProject,
-        selectedLoaderId: initialProject.loaders[0]?.id ?? "",
+        project,
+        selectedLoaderId: project.loaders[0]?.id ?? "",
         focusModeLoaderId: null
       });
     },
