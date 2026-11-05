@@ -1,4 +1,4 @@
-import { getCellClipPath, normalizeCellShape } from "@/lib/cell-shapes";
+import { getCellClipPath, normalizeCellShape } from "@/core/cell-shapes";
 import { CellShape } from "@/types/dot-motion";
 
 /** Inside test in cell-local unit space: (0,0) top-left, (1,1) bottom-right. */

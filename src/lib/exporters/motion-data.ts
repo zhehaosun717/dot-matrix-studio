@@ -1,7 +1,7 @@
 import { getCanvasGridMetrics } from "@/lib/canvas-grid-metrics";
-import { getCellClipPath, normalizeCellShape } from "@/lib/cell-shapes";
+import { getCellClipPath, normalizeCellShape } from "@/core/cell-shapes";
 import { hexToRgb } from "@/lib/colors";
-import { getCycleDuration, sampleBackground, sampleMotion } from "@/lib/core/motion-sampler";
+import { getCycleDuration, sampleBackground, sampleMotion } from "@/core/motion-sampler";
 import { LoaderComponent, Project } from "@/types/dot-motion";
 
 const round = (n: number) => Number(n.toFixed(5));

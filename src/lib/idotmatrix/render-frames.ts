@@ -1,5 +1,5 @@
 import { hexToRgb, RgbColor } from "@/lib/colors";
-import { getCycleDuration, sampleBackground, sampleMotion } from "@/lib/core/motion-sampler";
+import { getCycleDuration, sampleBackground, sampleMotion } from "@/core/motion-sampler";
 import { MATRIX_SIZE, MAX_GIF_FPS, MAX_GIF_FRAMES } from "@/lib/idotmatrix/constants";
 import { getShapeMask, ShapeMask } from "@/lib/idotmatrix/shape-mask";
 import { LoaderComponent, Project } from "@/types/dot-motion";

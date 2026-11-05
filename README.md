@@ -116,17 +116,20 @@ pnpm desktop:dist     # 生成 Windows 安装包到 release/
 pnpm test             # 类型检查 + 全部测试
 ```
 
-测试覆盖：动效采样、代码导出、GIF/PNG 编码与蓝牙分包、实时推流（重试、迟到确认、互斥、冷却）、表情与中文渲染、本机 API 安全检查、MCP 工具端到端调用、绘图工具几何计算、图层与选区。
+测试覆盖：动效采样、代码导出、GIF/PNG 编码与蓝牙分包、实时推流（重试、迟到确认、互斥、冷却）、表情与中文渲染、本机 API 安全检查、MCP 工具端到端调用、绘图工具几何计算、图层与选区，以及 `src/core/` 纯逻辑层（不依赖 React 和浏览器 API 的检查、格子形状、网格变换、图层操作）和编辑器 store 的对外接口。
+
+后续的重构计划（新数据模型、`.dms` 项目文件、命令式撤销、改用 Vite，以及建议删除的上游功能）见 [docs/refactor-plan.md](./docs/refactor-plan.md)。
 
 ## 项目结构
 
 ```text
 src/
+  core/                        纯逻辑（不依赖 React 和浏览器）：图层与图层操作、绘图几何、网格变换、格子形状、文字转像素、图片像素计算、动效采样器
   components/editor/           画布、属性面板、绘图工具、iDotMatrix 面板、实时同步
   lib/idotmatrix/              32x32 渲染、GIF/PNG 编码、蓝牙协议与连接、投屏
   lib/agent-display/           表情、状态图标、像素字体（含中文）、场景
-  lib/core/  lib/exporters/    动效采样器与 Web/SwiftUI 代码导出（来自原编辑器）
-  stores/                      编辑器与点阵屏状态
+  lib/exporters/               Web/SwiftUI 代码导出（来自原编辑器）
+  stores/                      编辑器与点阵屏状态；stores/editor/ 是编辑器 store 按职责拆开的各部分
 desktop/src/                   Electron 主进程：托盘、自动连接、本机 agent API、投屏选择
 mcp/src/                       MCP 服务器与 hook 命令行
 scripts/                       测试、桌面构建、字体数据生成
@@ -134,7 +137,7 @@ scripts/                       测试、桌面构建、字体数据生成
 
 ## 致谢与许可
 
-- 本项目由 [LerSent001/dot-motion-builder](https://github.com/LerSent001/dot-motion-builder)（MIT）分叉而来，后来改成控制实体点阵屏的桌面应用，并改名为 Dot Matrix Studio（仓库原名 dot-motion-builder）。像素动画编辑器和 Toolcraft 界面组件仍沿用原项目代码，原项目的 Web/SwiftUI 代码导出功能也保留着，说明见 [README.en.md](./README.en.md#editor-code-export)。
+- 本项目由 [LerSent001/dot-motion-builder](https://github.com/LerSent001/dot-motion-builder)（MIT）分叉而来，后来改成控制实体点阵屏的桌面应用，并改名为 Dot Matrix Studio（仓库原名 dot-motion-builder）。像素动画编辑器和部分 Toolcraft 界面组件（只保留了应用实际用到的那些）仍沿用原项目代码，原项目的 Web/SwiftUI 代码导出功能也保留着，说明见 [README.en.md](./README.en.md#editor-code-export)。
 - Toolcraft UI 源码保留 Pixel Point 的 MIT 声明，见 [TOOLCRAFT_LICENSE.md](./TOOLCRAFT_LICENSE.md)。
 - 中文像素字体数据来自 TakWolf 的 [缝合像素字体 Fusion Pixel Font](https://github.com/TakWolf/fusion-pixel-font)（SIL OFL 1.1），许可全文见 [src/lib/agent-display/FONT-LICENSE.txt](./src/lib/agent-display/FONT-LICENSE.txt)。
 - 蓝牙协议参考 [8none1/idotmatrix](https://github.com/8none1/idotmatrix)、[derkalle4/python3-idotmatrix-client](https://github.com/derkalle4/python3-idotmatrix-client)、[markusressel/idotmatrix-api-client](https://github.com/markusressel/idotmatrix-api-client) 和 [DeskDot](https://github.com/shivpatel2468/idotmatrix) 的逆向与实测记录。

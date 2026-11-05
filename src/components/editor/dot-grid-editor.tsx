@@ -2,14 +2,14 @@
 
 import { memo, useCallback, useMemo, useRef, useState } from "react";
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
-import { getCellShapeClassName, getCellShapeStyle } from "@/lib/cell-shapes";
+import { getCellShapeClassName, getCellShapeStyle } from "@/core/cell-shapes";
 import { getCanvasGridMetrics } from "@/lib/canvas-grid-metrics";
 import { rgbaWithOpacity } from "@/lib/colors";
 import { LEGACY_MAX_GRID_SIZE } from "@/lib/grid-limits";
-import { cellAtPoint, cellsOnLine, colorsWithinTolerance, floodFillWhere, GridGeometry, isPointOnCells, isShapeTool, shapeCells, ShapeTool } from "@/lib/grid-tools";
+import { cellAtPoint, cellsOnLine, colorsWithinTolerance, floodFillWhere, GridGeometry, isPointOnCells, isShapeTool, shapeCells, ShapeTool } from "@/core/grid-tools";
 import { moveSelection } from "@/components/editor/selection-actions";
-import { layerPixelAt, mirroredCells } from "@/lib/layers";
-import { layersOf } from "@/stores/layer-ops";
+import { layerPixelAt, mirroredCells } from "@/core/layers";
+import { layersOf } from "@/core/layer-ops";
 import { useDrawStore } from "@/stores/use-draw-store";
 import { LoaderComponent } from "@/types/dot-motion";
 

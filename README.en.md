@@ -116,7 +116,9 @@ pnpm desktop:dist     # Windows installer in release/
 pnpm test             # typecheck and all test suites
 ```
 
-Tests cover motion sampling, code export, GIF/PNG encoding and Bluetooth framing, live streaming (retries, late acks, mutual exclusion, cooldown), faces and Chinese text rendering, local API security checks, MCP tools end to end, drawing-tool geometry, and layers and selections.
+Tests cover motion sampling, code export, GIF/PNG encoding and Bluetooth framing, live streaming (retries, late acks, mutual exclusion, cooldown), faces and Chinese text rendering, local API security checks, MCP tools end to end, drawing-tool geometry, layers and selections, and the pure `src/core/` layer (a check that it stays free of React and browser APIs, cell shapes, grid transforms, layer operations), and the editor store's public surface.
+
+The planned refactor (new data model, `.dms` project files, command-based undo, moving to Vite, and the upstream features proposed for removal) is described in [docs/refactor-plan.md](./docs/refactor-plan.md) (in Chinese).
 
 ## Editor code export
 
@@ -126,11 +128,12 @@ The editor still exports self-contained code for each animation. The **Web** exp
 
 ```text
 src/
+  core/                        pure logic (no React, no browser): layers and layer ops, drawing geometry, grid transforms, cell shapes, text to pixels, image pixel maths, motion sampler
   components/editor/           canvas, inspector, drawing tools, iDotMatrix panel, live sync
   lib/idotmatrix/              32x32 rendering, GIF/PNG encoding, Bluetooth protocol and link, mirroring
   lib/agent-display/           faces, status icons, pixel fonts (incl. Chinese), scenes
-  lib/core/  lib/exporters/    motion sampler and Web/SwiftUI export (from the original editor)
-  stores/                      editor and panel state
+  lib/exporters/               Web/SwiftUI export (from the original editor)
+  stores/                      editor and panel state; stores/editor/ holds the editor store's parts, one per area
 desktop/src/                   Electron main process: tray, auto-connect, local agent API, screen picker
 mcp/src/                       MCP server and hook CLI
 scripts/                       tests, desktop build, font data generation
@@ -138,7 +141,7 @@ scripts/                       tests, desktop build, font data generation
 
 ## Credits and licenses
 
-- This project began as a fork of [LerSent001/dot-motion-builder](https://github.com/LerSent001/dot-motion-builder) (MIT) and was later turned into a desktop app that drives a physical panel, then renamed Dot Matrix Studio (the repository was formerly called dot-motion-builder). The pixel animation editor and the Toolcraft UI components still come from that project, as does the Web/SwiftUI code export described above.
+- This project began as a fork of [LerSent001/dot-motion-builder](https://github.com/LerSent001/dot-motion-builder) (MIT) and was later turned into a desktop app that drives a physical panel, then renamed Dot Matrix Studio (the repository was formerly called dot-motion-builder). The pixel animation editor and the Toolcraft UI components it uses (unused ones have been removed) still come from that project, as does the Web/SwiftUI code export described above.
 - Toolcraft UI source keeps Pixel Point's MIT notice; see [TOOLCRAFT_LICENSE.md](./TOOLCRAFT_LICENSE.md).
 - Chinese pixel glyphs come from TakWolf's [Fusion Pixel Font](https://github.com/TakWolf/fusion-pixel-font) (SIL OFL 1.1); full license in [src/lib/agent-display/FONT-LICENSE.txt](./src/lib/agent-display/FONT-LICENSE.txt).
 - Bluetooth protocol knowledge from [8none1/idotmatrix](https://github.com/8none1/idotmatrix), [derkalle4/python3-idotmatrix-client](https://github.com/derkalle4/python3-idotmatrix-client), [markusressel/idotmatrix-api-client](https://github.com/markusressel/idotmatrix-api-client) and [DeskDot](https://github.com/shivpatel2468/idotmatrix).

@@ -1,0 +1,219 @@
+/* Editor shell: top bar, buttons, add menu, zoom HUD, language switch. */
+.builder-shell {
+  position: relative;
+  height: 100vh;
+  background: var(--canvas-bg);
+}
+
+.builder-topbar {
+  position: absolute;
+  inset: 16px 16px auto 16px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.builder-topbar__center,
+.builder-topbar__actions {
+  pointer-events: auto;
+}
+
+.github-entry {
+  position: absolute;
+  left: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid color-mix(in oklab, var(--border) 12%, transparent);
+  border-radius: 8px;
+  background: color-mix(in oklab, var(--input) 10%, transparent);
+  color: color-mix(in oklab, var(--foreground) 76%, transparent);
+  font-size: 11px;
+  font-weight: 550;
+  line-height: 1;
+  text-decoration: none;
+  pointer-events: auto;
+  transition: border-color 150ms ease, background-color 150ms ease, color 150ms ease;
+}
+
+.github-entry svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+
+.github-entry:hover {
+  border-color: color-mix(in oklab, var(--border) 24%, transparent);
+  background: color-mix(in oklab, var(--input) 16%, transparent);
+  color: var(--foreground);
+}
+
+.toolbar-button {
+  height: 28px;
+  padding-inline: 10px;
+  font-size: 11px;
+}
+
+.builder-topbar__center {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.add-artboard-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  z-index: 16;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  width: 252px;
+  padding: 8px;
+  border: 1px solid var(--app-border);
+  border-radius: 22px;
+  background: rgba(16, 18, 23, 0.94);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.34);
+  transform: translateX(-50%);
+  backdrop-filter: blur(18px);
+}
+
+.add-artboard-card {
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  min-height: 82px;
+  padding: 12px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.035);
+  color: rgba(245, 247, 250, 0.82);
+  font-size: 14px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.add-artboard-card svg {
+  width: 25px;
+  height: 25px;
+  fill: currentColor;
+}
+
+.add-artboard-card:hover {
+  border-color: var(--accent-border);
+  background: rgba(215, 255, 90, 0.12);
+  color: var(--text);
+}
+
+.builder-topbar__actions {
+  position: absolute;
+  right: 0;
+  display: flex;
+  gap: 10px;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 16px;
+  border: 1px solid var(--app-border);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  cursor: pointer;
+  box-shadow: none;
+  font-size: 14px;
+  font-weight: 650;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.button {
+  background: linear-gradient(180deg, #e4ff8c 0%, #c8f25a 48%, #bdeb37 100%);
+  border-color: rgba(215, 255, 90, 0.42);
+  color: var(--accent-text);
+  box-shadow: none;
+}
+
+.button:hover {
+  border-color: var(--accent-border);
+  box-shadow:
+    0 12px 30px rgba(195, 255, 92, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  transform: translateY(-1px);
+}
+
+.button:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.builder-workspace {
+  position: relative;
+  height: 100vh;
+}
+
+.zoom-hud {
+  position: absolute;
+  top: 76px;
+  left: 50%;
+  z-index: 11;
+  min-width: 92px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: rgba(21, 23, 30, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.92);
+  text-align: center;
+  transform: translateX(-50%) translateY(-6px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease, transform 180ms ease;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.24);
+}
+
+.zoom-hud.is-visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.language-switch {
+  position: absolute;
+  left: 18px;
+  bottom: 18px;
+  z-index: 12;
+  width: 92px;
+  padding: 4px;
+  border: 1px solid color-mix(in oklab, var(--border) 24%, transparent);
+  border-radius: 8px;
+  background: color-mix(in oklab, var(--background) 82%, transparent);
+  box-shadow: 0 12px 32px -20px rgb(0 0 0 / 80%);
+  backdrop-filter: blur(14px) saturate(130%);
+}
+
+.language-switch [data-control-field-label] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.language-switch [data-slot="toggle-group-item"] {
+  min-height: 24px;
+  padding-inline: 5px;
+  font-size: 10px;
+}

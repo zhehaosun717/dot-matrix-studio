@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef } from "react";
-import { getCellClipPath, normalizeCellShape } from "@/lib/cell-shapes";
+import { getCellClipPath, normalizeCellShape } from "@/core/cell-shapes";
 import { clampAlpha } from "@/lib/colors";
-import { getCycleDuration, sampleBackground, sampleMotion } from "@/lib/core/motion-sampler";
+import { getCycleDuration, sampleBackground, sampleMotion } from "@/core/motion-sampler";
 import { CellShape, LoaderComponent } from "@/types/dot-motion";
 
 type DenseCellCanvasProps = {

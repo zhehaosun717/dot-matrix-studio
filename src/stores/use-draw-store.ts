@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { normalizeHexColor } from "@/lib/colors";
-import { DrawTool } from "@/lib/grid-tools";
+import { DrawTool } from "@/core/grid-tools";
 
 export type Symmetry = "none" | "x" | "y" | "xy";
 export const SYMMETRIES: readonly Symmetry[] = ["none", "x", "y", "xy"];
