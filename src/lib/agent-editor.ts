@@ -4,7 +4,7 @@
  */
 import { z } from "zod";
 import { medianCutPalette, nearestIndex } from "@/lib/idotmatrix/color-quantizer";
-import { layersOf } from "@/stores/layer-ops";
+import { layersOf } from "@/core/layer-ops";
 import { LoaderComponent } from "@/types/dot-motion";
 
 export const MAX_ARTWORK_SIZE = 32;

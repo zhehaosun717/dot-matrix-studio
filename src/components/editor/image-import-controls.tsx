@@ -8,9 +8,9 @@ import {
   ImportFit,
   ImportOptions,
   MAX_IMPORT_FRAMES,
-  pixelsToCells,
-  rasterizeImageFile
-} from "@/lib/image-import";
+  pixelsToCells
+} from "@/core/image-pixels";
+import { rasterizeImageFile } from "@/lib/image-import";
 import { Language } from "@/lib/ui-copy";
 import { useEditorStore } from "@/stores/use-editor-store";
 import { LoaderComponent } from "@/types/dot-motion";

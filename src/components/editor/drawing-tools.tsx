@@ -1,7 +1,7 @@
 "use client";
 
-import { DrawTool, isShapeTool, MAX_FILL_TOLERANCE } from "@/lib/grid-tools";
-import { GridTransform } from "@/lib/grid-transforms";
+import { DrawTool, isShapeTool, MAX_FILL_TOLERANCE } from "@/core/grid-tools";
+import { GridTransform } from "@/core/grid-transforms";
 import { Language } from "@/lib/ui-copy";
 import { redo, undo, useHistoryStore } from "@/stores/editor-history";
 import { copySelection, cutSelection, deleteSelection, nudgeDrawing, pasteSelection } from "@/components/editor/selection-actions";

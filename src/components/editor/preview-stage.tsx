@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getCanvasGridMetrics } from "@/lib/canvas-grid-metrics";
-import { getCellShapeClassName, getCellShapeStyle } from "@/lib/cell-shapes";
+import { getCellShapeClassName, getCellShapeStyle } from "@/core/cell-shapes";
 import { rgbaWithOpacity } from "@/lib/colors";
 import { DenseCellCanvas } from "@/components/editor/dense-cell-canvas";
-import { getCycleDuration, sampleMotion, sampleBackground } from "@/lib/core/motion-sampler";
+import { getCycleDuration, sampleMotion, sampleBackground } from "@/core/motion-sampler";
 import { LEGACY_MAX_GRID_SIZE } from "@/lib/grid-limits";
 import { LoaderComponent } from "@/types/dot-motion";
 

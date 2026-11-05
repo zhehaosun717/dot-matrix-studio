@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { Language } from "@/lib/ui-copy";
-import { layersOf, MAX_LAYERS } from "@/stores/layer-ops";
+import { layersOf, MAX_LAYERS } from "@/core/layer-ops";
 import { useEditorStore, useSelectedLoader } from "@/stores/use-editor-store";
 import { PatternSnapshot } from "@/types/dot-motion";
 import { Button } from "@/toolcraft/ui/components/primitives/button";

@@ -1,15 +1,15 @@
 "use client";
 
 import { create } from "zustand";
-import { normalizeCellShape } from "@/lib/cell-shapes";
+import { normalizeCellShape } from "@/core/cell-shapes";
 import { MAX_GRID_SIZE, MIN_GRID_SIZE, MIN_SLIDER_GRID_SIZE } from "@/lib/grid-limits";
-import { GridTransform } from "@/lib/grid-transforms";
-import { createLayer } from "@/lib/layers";
+import { GridTransform } from "@/core/grid-transforms";
+import { createLayer } from "@/core/layers";
 import { createMockProject, PROJECT_VERSION } from "@/lib/mock-project";
 import { getDefaultMotionConfig } from "@/lib/motion-presets";
 import { buildPatternCells } from "@/lib/pattern-presets";
 import { loadProject, saveProject } from "@/lib/persistence";
-import * as layerOps from "@/stores/layer-ops";
+import * as layerOps from "@/core/layer-ops";
 import {
   AnimationConfig,
   AnimationMode,

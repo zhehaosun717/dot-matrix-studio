@@ -2,9 +2,9 @@
  * Copy, cut, paste and delete for the selection box, shared by the keyboard shortcuts and the panel
  * buttons. They read the stores directly, so they can run from any event handler.
  */
-import { GridTransform } from "@/lib/grid-transforms";
-import { cellsInBox, layerPixelAt } from "@/lib/layers";
-import { layersOf } from "@/stores/layer-ops";
+import { GridTransform } from "@/core/grid-transforms";
+import { cellsInBox, layerPixelAt } from "@/core/layers";
+import { layersOf } from "@/core/layer-ops";
 import { SelectionBox, useDrawStore } from "@/stores/use-draw-store";
 import { useEditorStore } from "@/stores/use-editor-store";
 

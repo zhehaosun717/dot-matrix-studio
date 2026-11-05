@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MAX_TEXT_SCALE, type TextFont } from "@/lib/text-cells";
+import { MAX_TEXT_SCALE, type TextFont } from "@/core/text-cells";
 import { Language } from "@/lib/ui-copy";
 import { useDrawStore } from "@/stores/use-draw-store";
 import { useEditorStore } from "@/stores/use-editor-store";
@@ -54,7 +54,7 @@ export function TextStampControls({ language, loader }: TextStampControlsProps) 
   async function stamp() {
     try {
       // The Chinese font is ~170 KB, so it loads only when text is first written.
-      const { textToCells } = await import("@/lib/text-cells");
+      const { textToCells } = await import("@/core/text-cells");
       const { rows, cols } = loader.pattern.grid;
       const cells = textToCells(text, rows, cols, font, effectiveScale);
       const color = brushChoice ?? loader.style.primaryColor;

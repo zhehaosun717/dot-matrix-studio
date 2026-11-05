@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Language } from "@/lib/ui-copy";
-import { layersOf, MAX_LAYERS } from "@/stores/layer-ops";
+import { layersOf, MAX_LAYERS } from "@/core/layer-ops";
 import { useDrawStore } from "@/stores/use-draw-store";
 import { useEditorStore } from "@/stores/use-editor-store";
 import { LoaderComponent } from "@/types/dot-motion";
