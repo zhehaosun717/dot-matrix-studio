@@ -118,7 +118,7 @@ pnpm desktop:dist     # Windows installer in release/
 pnpm test             # typecheck and all test suites
 ```
 
-Tests cover motion sampling, code export, GIF/PNG encoding and Bluetooth framing, live streaming (retries, late acks, mutual exclusion, cooldown), faces and Chinese text rendering, local API security checks, MCP tools end to end, drawing-tool geometry, layers and selections, the pure `src/core/` layer (a check that it stays free of React and browser APIs, cell shapes, grid transforms, layer operations), the editor store's public surface, loading saved projects (other versions are migrated; data that cannot be used is backed up unchanged, never simply overwritten), undo / redo (one stroke is one step, 500 ms coalescing, view changes not recorded), the new document model (every artboard renders to the panel byte for byte the same after migration), command-based undo (every command round-trips exactly; 300 random edits undo back to the start), frame sequences (order, placement and selection after duplicating or deleting any frame; onion skin), and the panel preview (frames identical to the renderer's, LED drawing, remembered layout).
+Tests cover motion sampling, code export, GIF/PNG encoding and Bluetooth framing, live streaming (retries, late acks, mutual exclusion, cooldown), faces and Chinese text rendering, local API security checks, MCP tools end to end, drawing-tool geometry, layers and selections, the pure `src/core/` layer (a check that it stays free of React and browser APIs, cell shapes, grid transforms, layer operations), the editor store's public surface, loading saved projects (other versions are migrated; data that cannot be used is backed up unchanged, never simply overwritten), undo / redo (one stroke is one step, 500 ms coalescing, view changes not recorded), the new document model (every artboard renders to the panel byte for byte the same after migration), command-based undo (every command round-trips exactly; 300 random edits undo back to the start), project files on disk (atomic saves with .bak, failures leave the old file intact, recent files, autosave), and reading and writing .dms project files (exact round trips; malformed and randomly corrupted files are rejected without crashing), and the editor-side tests: copying, cutting, pasting and nudging selections, saving and loading the panel colour settings and recent colours (still working with damaged data or full storage), and the errors agents get from editor requests (out-of-range fields, no artboard, a full artboard), and frames (the order, position and selection after duplicating or deleting any frame, onion skin), and the panel preview card (the 32x32 preview matching the panel render).
 
 The planned refactor (new data model, `.dms` project files, command-based undo, moving to Vite, and the upstream features proposed for removal) is described in [docs/refactor-plan.md](./docs/refactor-plan.md) (in Chinese).
 
@@ -147,14 +147,14 @@ The editor still exports self-contained code for each animation. The **Web** exp
 ```text
 src/
   core/                        pure logic (no React, no browser): layers and layer ops, drawing geometry, grid transforms, cell shapes, text to pixels, image pixel maths, motion sampler
-  core/document/               the new document model (document -> frames x layers -> cels), conversion to and from today's projects, undoable edit commands; not wired into the editor yet
+  core/document/               the new document model (document -> frames x layers -> cels), conversion to and from today's projects, undoable edit commands, the .dms file format; not wired into the editor yet
   core/history.ts              command-based undo / redo (merging, gestures, step and memory limits); not wired into the editor yet
   components/editor/           canvas, inspector, drawing tools, iDotMatrix panel, live sync
   lib/idotmatrix/              32x32 rendering, GIF/PNG encoding, Bluetooth protocol and link, mirroring
   lib/agent-display/           faces, status icons, pixel fonts (incl. Chinese), scenes
   lib/exporters/               Web/SwiftUI export (from the original editor)
   stores/                      editor and panel state; stores/editor/ holds the editor store's parts, one per area
-desktop/src/                   Electron main process: tray, auto-connect, local agent API, screen picker
+desktop/src/                   Electron main process: tray, auto-connect, local agent API, screen picker; project-files.ts reads and writes project files (not wired up yet)
 mcp/src/                       MCP server and hook CLI
 scripts/                       tests, desktop build, font data generation
 ```
