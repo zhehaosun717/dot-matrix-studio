@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { CanvasArtboard } from "@/components/editor/canvas-artboard";
 import { FrameStrip } from "@/components/editor/frame-strip";
+import { PanelPreview } from "@/components/editor/panel-preview";
 import { SequencePreviewStage } from "@/components/editor/preview-stage";
 import { SequenceGroupChrome } from "@/components/editor/sequence-group-chrome";
 import type { CanvasLayout, PreviewScope } from "@/components/editor/use-canvas-layout";
@@ -57,6 +58,8 @@ export function EditorCanvas({
     () => (onionSkin && (previousCells || nextCells) ? onionGhosts(previousCells, nextCells) : null),
     [nextCells, onionSkin, previousCells]
   );
+
+  const editingLoader = project.loaders.find((loader) => loader.id === selectedLoaderId) ?? project.loaders[0];
 
   function selectFrame(frameId: string) {
     selectCanvasLoader(frameId);
@@ -176,6 +179,10 @@ export function EditorCanvas({
           ))}
         </div>
       </div>
+
+      {editingLoader ? (
+        <PanelPreview language={language} project={project} loader={editingLoader} canvasPlaying={previewScope !== "none"} />
+      ) : null}
 
       {selectedFrames && previewScope === "none" ? (
         <FrameStrip language={language} frames={selectedFrames} selectedId={selectedLoaderId} onSelectFrame={selectFrame} />
