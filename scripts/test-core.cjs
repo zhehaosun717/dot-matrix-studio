@@ -1,4 +1,4 @@
-// Pure core (src/core): no React or browser APIs, forwarders at the old paths, and the functions no other suite covers directly.
+// Pure core (src/core): no React or browser APIs, nothing left at the old paths, and the functions no other suite covers directly.
 const fs = require('node:fs');
 const path = require('node:path');
 const Module = require('node:module');

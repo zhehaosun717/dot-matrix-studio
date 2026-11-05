@@ -16,7 +16,6 @@
     "test:core": "node scripts/test-core.cjs",
     "qa:snapshot": "node scripts/qa-snapshot.mjs",
     "test:store": "node scripts/test-editor-store.cjs",
-    "test": "",
     "test:persistence": "node scripts/test-persistence.cjs",
     "test:history": "node scripts/test-editor-history.cjs",
     "test:document": "node scripts/test-document.cjs",
