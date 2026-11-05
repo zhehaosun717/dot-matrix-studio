@@ -116,7 +116,7 @@ pnpm desktop:dist     # 生成 Windows 安装包到 release/
 pnpm test             # 类型检查 + 全部测试
 ```
 
-测试覆盖：动效采样、代码导出、GIF/PNG 编码与蓝牙分包、实时推流（重试、迟到确认、互斥、冷却）、表情与中文渲染、本机 API 安全检查、MCP 工具端到端调用、绘图工具几何计算、图层与选区，以及 `src/core/` 纯逻辑层（不依赖 React 和浏览器 API 的检查、格子形状、网格变换、图层操作）。
+测试覆盖：动效采样、代码导出、GIF/PNG 编码与蓝牙分包、实时推流（重试、迟到确认、互斥、冷却）、表情与中文渲染、本机 API 安全检查、MCP 工具端到端调用、绘图工具几何计算、图层与选区，以及 `src/core/` 纯逻辑层（不依赖 React 和浏览器 API 的检查、格子形状、网格变换、图层操作）和编辑器 store 的对外接口。
 
 ## 项目结构
 
@@ -127,7 +127,7 @@ src/
   lib/idotmatrix/              32x32 渲染、GIF/PNG 编码、蓝牙协议与连接、投屏
   lib/agent-display/           表情、状态图标、像素字体（含中文）、场景
   lib/exporters/               Web/SwiftUI 代码导出（来自原编辑器）
-  stores/                      编辑器与点阵屏状态
+  stores/                      编辑器与点阵屏状态；stores/editor/ 是编辑器 store 按职责拆开的各部分
 desktop/src/                   Electron 主进程：托盘、自动连接、本机 agent API、投屏选择
 mcp/src/                       MCP 服务器与 hook 命令行
 scripts/                       测试、桌面构建、字体数据生成

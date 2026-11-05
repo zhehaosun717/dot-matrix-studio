@@ -116,7 +116,7 @@ pnpm desktop:dist     # Windows installer in release/
 pnpm test             # typecheck and all test suites
 ```
 
-Tests cover motion sampling, code export, GIF/PNG encoding and Bluetooth framing, live streaming (retries, late acks, mutual exclusion, cooldown), faces and Chinese text rendering, local API security checks, MCP tools end to end, drawing-tool geometry, layers and selections, and the pure `src/core/` layer (a check that it stays free of React and browser APIs, cell shapes, grid transforms, layer operations).
+Tests cover motion sampling, code export, GIF/PNG encoding and Bluetooth framing, live streaming (retries, late acks, mutual exclusion, cooldown), faces and Chinese text rendering, local API security checks, MCP tools end to end, drawing-tool geometry, layers and selections, and the pure `src/core/` layer (a check that it stays free of React and browser APIs, cell shapes, grid transforms, layer operations), and the editor store's public surface.
 
 ## Editor code export
 
@@ -131,7 +131,7 @@ src/
   lib/idotmatrix/              32x32 rendering, GIF/PNG encoding, Bluetooth protocol and link, mirroring
   lib/agent-display/           faces, status icons, pixel fonts (incl. Chinese), scenes
   lib/exporters/               Web/SwiftUI export (from the original editor)
-  stores/                      editor and panel state
+  stores/                      editor and panel state; stores/editor/ holds the editor store's parts, one per area
 desktop/src/                   Electron main process: tray, auto-connect, local agent API, screen picker
 mcp/src/                       MCP server and hook CLI
 scripts/                       tests, desktop build, font data generation
