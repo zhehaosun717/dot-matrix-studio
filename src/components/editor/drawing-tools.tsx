@@ -1,5 +1,16 @@
 "use client";
 
+import {
+  ArrowClockwiseIcon,
+  ArrowCounterClockwiseIcon,
+  ArrowDownIcon,
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  ArrowUpIcon,
+  FlipHorizontalIcon,
+  FlipVerticalIcon,
+  type Icon
+} from "@phosphor-icons/react";
 import { DrawTool, isShapeTool, MAX_FILL_TOLERANCE } from "@/core/grid-tools";
 import { GridTransform } from "@/core/grid-transforms";
 import { Language } from "@/lib/ui-copy";
@@ -50,15 +61,16 @@ const copy = {
   }
 } as const;
 
-const TRANSFORM_BUTTONS: ReadonlyArray<{ op: GridTransform; glyph: string }> = [
-  { op: "left", glyph: "←" },
-  { op: "right", glyph: "→" },
-  { op: "up", glyph: "↑" },
-  { op: "down", glyph: "↓" },
-  { op: "flip-h", glyph: "⇋" },
-  { op: "flip-v", glyph: "⇵" },
-  { op: "rotate-cw", glyph: "↻" },
-  { op: "rotate-ccw", glyph: "↺" }
+/** SVG icons: the old arrow characters (⇋ ⇵ ↻ ↺) are missing from the UI font and rendered tiny. */
+const TRANSFORM_BUTTONS: ReadonlyArray<{ op: GridTransform; Icon: Icon }> = [
+  { op: "left", Icon: ArrowLeftIcon },
+  { op: "right", Icon: ArrowRightIcon },
+  { op: "up", Icon: ArrowUpIcon },
+  { op: "down", Icon: ArrowDownIcon },
+  { op: "flip-h", Icon: FlipHorizontalIcon },
+  { op: "flip-v", Icon: FlipVerticalIcon },
+  { op: "rotate-cw", Icon: ArrowClockwiseIcon },
+  { op: "rotate-ccw", Icon: ArrowCounterClockwiseIcon }
 ];
 
 type DrawingToolsProps = {
@@ -158,7 +170,7 @@ export function DrawingTools({ language, loader }: DrawingToolsProps) {
       <div className="draw-transform">
         <span className="image-import__hint">{t.transform}</span>
         <div className="draw-button-row">
-          {TRANSFORM_BUTTONS.map(({ op, glyph }) => (
+          {TRANSFORM_BUTTONS.map(({ op, Icon }) => (
             <Button
               key={op}
               type="button"
@@ -169,7 +181,7 @@ export function DrawingTools({ language, loader }: DrawingToolsProps) {
               aria-label={t[op]}
               onClick={() => nudgeDrawing(loader.id, op)}
             >
-              {glyph}
+              <Icon size={15} weight="bold" aria-hidden />
             </Button>
           ))}
         </div>
