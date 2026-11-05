@@ -10,6 +10,7 @@ import { cellAtPoint, cellsOnLine, colorsWithinTolerance, floodFillWhere, GridGe
 import { moveSelection } from "@/components/editor/selection-actions";
 import { layerPixelAt, mirroredCells } from "@/core/layers";
 import { layersOf } from "@/core/layer-ops";
+import type { OnionGhost } from "@/core/sequence-frames";
 import { useDrawStore } from "@/stores/use-draw-store";
 import { LoaderComponent } from "@/types/dot-motion";
 
@@ -19,6 +20,8 @@ type DotGridEditorProps = {
   /** Sets many cells at once (one call per stroke step, shape or fill), lit cells in the given colour. */
   onApplyCells: (cells: number[], active: boolean, color?: string) => void;
   variant?: "default" | "canvas";
+  /** Onion skin: unlit cells lit in the previous and / or next frame, drawn faintly tinted. */
+  ghosts?: ReadonlyMap<number, OnionGhost> | null;
 };
 
 /**
@@ -29,6 +32,15 @@ export const drawingPointerDowns = new WeakSet<Event>();
 
 /** The cell size the original glow values were tuned for; dense grids scale their glow down from it. */
 const GLOW_REFERENCE_CELL = 22;
+
+const ONION_PREVIOUS = "rgba(255, 86, 86, 0.5)";
+const ONION_NEXT = "rgba(70, 210, 120, 0.5)";
+/** Tint layered over an unlit cell's background: red for the previous frame, green for the next (the default base colour is blue), split for both. */
+const ONION_TINTS: Record<OnionGhost, string> = {
+  previous: `linear-gradient(${ONION_PREVIOUS}, ${ONION_PREVIOUS})`,
+  next: `linear-gradient(${ONION_NEXT}, ${ONION_NEXT})`,
+  both: `linear-gradient(135deg, ${ONION_PREVIOUS} 50%, ${ONION_NEXT} 50%)`
+};
 
 /** mode: what the drag does — paint/shape strokes, drawing a selection box, or moving the selection. */
 type Stroke = { pointerId: number; value: boolean; start: number; last: number; mode: "draw" | "select" | "move" };
@@ -44,10 +56,11 @@ type DotCellProps = {
   className: string;
   style: CSSProperties;
   inactiveBackground: string;
+  ghost?: OnionGhost;
 };
 
 /** Memoised so a stroke re-renders only the cells it changes, not all 1024 of a 32x32 grid. */
-const DotCell = memo(function DotCell({ index, active, color, preview, selected, className, style, inactiveBackground }: DotCellProps) {
+const DotCell = memo(function DotCell({ index, active, color, preview, selected, className, style, inactiveBackground, ghost }: DotCellProps) {
   const activeStyle = color ? { ...style, ["--cell-color" as string]: color, ["--cell-glow-color" as string]: color } : style;
   return (
     <button
@@ -55,14 +68,14 @@ const DotCell = memo(function DotCell({ index, active, color, preview, selected,
       data-dot-cell="true"
       className={`${className}${active ? " is-active" : ""}${preview ? " is-preview" : ""}${selected ? " is-selected" : ""}`}
       onClick={(event) => event.preventDefault()}
-      style={active ? activeStyle : { ...style, background: inactiveBackground }}
+      style={active ? activeStyle : { ...style, background: ghost ? `${ONION_TINTS[ghost]}, ${inactiveBackground}` : inactiveBackground }}
       aria-label={`Toggle cell ${index + 1}`}
       aria-pressed={active}
     />
   );
 });
 
-export function DotGridEditor({ loader, onApplyCells, variant = "default" }: DotGridEditorProps) {
+export function DotGridEditor({ loader, onApplyCells, variant = "default", ghosts = null }: DotGridEditorProps) {
   const { rows, cols, cellSize, gap } = loader.pattern.grid;
   const canvasMetrics = useMemo(() => getCanvasGridMetrics(loader), [loader]);
   const activeCells = useMemo(() => new Set(loader.pattern.activeCells), [loader.pattern.activeCells]);
@@ -266,6 +279,7 @@ export function DotGridEditor({ loader, onApplyCells, variant = "default" }: Dot
             className={className}
             style={cellStyle}
             inactiveBackground={inactiveBackground}
+            ghost={ghosts?.get(cellIndex)}
           />
         ))}
       </div>

@@ -1,11 +1,15 @@
 "use client";
 
+import { useMemo } from "react";
 import { CanvasArtboard } from "@/components/editor/canvas-artboard";
+import { FrameStrip } from "@/components/editor/frame-strip";
 import { SequencePreviewStage } from "@/components/editor/preview-stage";
 import { SequenceGroupChrome } from "@/components/editor/sequence-group-chrome";
 import type { CanvasLayout, PreviewScope } from "@/components/editor/use-canvas-layout";
 import type { CanvasViewport } from "@/components/editor/use-canvas-viewport";
+import { frameNeighbours, onionGhosts } from "@/core/sequence-frames";
 import { Language, uiCopy } from "@/lib/ui-copy";
+import { useDrawStore } from "@/stores/use-draw-store";
 import { useEditorStore } from "@/stores/use-editor-store";
 import { LoaderComponent, Project } from "@/types/dot-motion";
 
@@ -38,10 +42,27 @@ export function EditorCanvas({
   const removeSequenceFrame = useEditorStore((state) => state.removeSequenceFrame);
   const duplicateSelectedLoader = useEditorStore((state) => state.duplicateSelectedLoader);
   const deleteSelectedLoader = useEditorStore((state) => state.deleteSelectedLoader);
+  const onionSkin = useDrawStore((state) => state.onionSkin);
   const canvas = project.canvas;
   const t = uiCopy[language];
-  const { canvasBounds, sequenceFrameCount, selectedSequenceBounds, visibleLoaders, sequencePreviewGroups } = layout;
-  const { viewportRef, isPanning, handleCanvasWheel, handleViewportPointerDown, handleViewportPointerMove, endPan, centerCanvasContent } = viewport;
+  const { canvasBounds, sequenceGroups, sequenceFrameCount, selectedSequenceBounds, visibleLoaders, sequencePreviewGroups } = layout;
+  const { viewportRef, isPanning, handleCanvasWheel, handleViewportPointerDown, handleViewportPointerMove, endPan, centerCanvasContent, revealBounds } = viewport;
+  const selectedFrames = selectedSequenceId ? sequenceGroups.get(selectedSequenceId) : undefined;
+  const { previous, next } = frameNeighbours(selectedFrames ?? [], selectedLoaderId);
+  const selectedCols = selectedFrames?.find((frame) => frame.id === selectedLoaderId)?.pattern.grid.cols;
+  // Neighbours on a different grid would not line up cell for cell; they are left out.
+  const previousCells = previous && previous.pattern.grid.cols === selectedCols ? previous.pattern.activeCells : null;
+  const nextCells = next && next.pattern.grid.cols === selectedCols ? next.pattern.activeCells : null;
+  const ghosts = useMemo(
+    () => (onionSkin && (previousCells || nextCells) ? onionGhosts(previousCells, nextCells) : null),
+    [nextCells, onionSkin, previousCells]
+  );
+
+  function selectFrame(frameId: string) {
+    selectCanvasLoader(frameId);
+    const frame = project.loaders.find((loader) => loader.id === frameId);
+    if (frame) revealBounds({ left: frame.artboard.x, top: frame.artboard.y, width: frame.artboard.width, height: frame.artboard.height });
+  }
 
   return (
     <div className="builder-canvas-shell">
@@ -82,11 +103,11 @@ export function EditorCanvas({
               canDelete={project.loaders.some((loader) => loader.sequenceId !== selectedSequenceId)}
               onAddFrame={() => {
                 setPreviewScope("none");
-                addSequenceFrame(selectedSequenceId);
+                addSequenceFrame(selectedSequenceId, selectedLoaderId);
               }}
               onRemoveFrame={() => {
                 setPreviewScope("none");
-                removeSequenceFrame(selectedSequenceId);
+                removeSequenceFrame(selectedSequenceId, selectedLoaderId);
               }}
               onDuplicate={duplicateSelectedLoader}
               onDelete={deleteSelectedLoader}
@@ -150,10 +171,15 @@ export function EditorCanvas({
                   : project.loaders.length > 1
               }
               hideChrome={Boolean(item.sequenceId)}
+              ghosts={item.id === selectedLoaderId ? ghosts : null}
             />
           ))}
         </div>
       </div>
+
+      {selectedFrames && previewScope === "none" ? (
+        <FrameStrip language={language} frames={selectedFrames} selectedId={selectedLoaderId} onSelectFrame={selectFrame} />
+      ) : null}
 
       <button
         type="button"

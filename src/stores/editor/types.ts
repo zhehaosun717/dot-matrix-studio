@@ -46,7 +46,9 @@ export type EditorState = {
   addLayerFromPixels: (loaderId: string, name: string, pixels: Record<string, string>) => string | null;
   setPatternSourceType: (sourceType: "template" | "drawn") => void;
   addLoader: (kind?: LoaderKind) => void;
-  addSequenceFrame: (sequenceId: string) => void;
+  /** Inserts a copy of the given frame (default: the last) right after it and selects the copy. */
+  addSequenceFrame: (sequenceId: string, afterLoaderId?: string) => void;
+  /** Deletes the given frame (default: the last); the frame that takes its place is selected. */
   removeSequenceFrame: (sequenceId: string, loaderId?: string) => void;
   copySelectedLoader: () => void;
   pasteLoader: () => void;

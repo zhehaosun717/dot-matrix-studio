@@ -5,7 +5,9 @@ import { DRAW_TOOL_KEYS } from "@/components/editor/drawing-tools";
 import { activePixelSelection, copySelection, cutSelection, deleteSelection, nudgeDrawing, pasteSelection } from "@/components/editor/selection-actions";
 import type { PreviewScope } from "@/components/editor/use-canvas-layout";
 import { GridTransform } from "@/core/grid-transforms";
+import { steppedFrame } from "@/core/sequence-frames";
 import { Language } from "@/lib/ui-copy";
+import { sortSequenceFrames } from "@/stores/editor/artboards";
 import { redo, undo } from "@/stores/editor-history";
 import { useDrawStore } from "@/stores/use-draw-store";
 import { useEditorStore } from "@/stores/use-editor-store";
@@ -14,8 +16,20 @@ const ARROW_NUDGES: Record<string, GridTransform> = { ArrowLeft: "left", ArrowRi
 /** Focused widgets that move their own focus or selection with the arrow keys (segmented controls are role=group). */
 const ARROW_KEY_WIDGETS = "[role='group'], [role='radiogroup'], [role='radio'], [role='slider'], [role='listbox'], [role='menu'], [role='tablist'], [role='combobox']";
 
-/** Editor keyboard shortcuts: tools, undo / redo, nudging, copy / cut / paste, duplicate, delete, Escape. */
-export function useEditorShortcuts(isExportOpen: boolean, language: Language, setPreviewScope: (scope: PreviewScope) => void) {
+/** , and . step to the previous and next frame of a sequence. */
+const FRAME_STEPS: Record<string, number> = { ",": -1, ".": 1 };
+
+/**
+ * Editor keyboard shortcuts: tools, undo / redo, nudging, stepping through frames, copy / cut / paste,
+ * duplicate, delete, Escape. revealArtboard brings an artboard selected from the keyboard into view.
+ */
+export function useEditorShortcuts(
+  isExportOpen: boolean,
+  language: Language,
+  setPreviewScope: (scope: PreviewScope) => void,
+  revealArtboard?: (loaderId: string) => void
+) {
+  const selectLoader = useEditorStore((state) => state.selectLoader);
   const clearSelection = useEditorStore((state) => state.clearSelection);
   const copySelectedLoader = useEditorStore((state) => state.copySelectedLoader);
   const pasteLoader = useEditorStore((state) => state.pasteLoader);
@@ -59,6 +73,19 @@ export function useEditorShortcuts(isExportOpen: boolean, language: Language, se
         if (loaderId) {
           event.preventDefault();
           nudgeDrawing(loaderId, nudge);
+        }
+        return;
+      }
+      const frameStep = FRAME_STEPS[event.key];
+      if (frameStep && !modifier && !event.altKey) {
+        const { project, selectedLoaderId } = useEditorStore.getState();
+        const current = project.loaders.find((loader) => loader.id === selectedLoaderId);
+        const target = current?.sequenceId ? steppedFrame(sortSequenceFrames(project.loaders, current.sequenceId), current.id, frameStep) : null;
+        if (target) {
+          event.preventDefault();
+          selectLoader(target.id);
+          setPreviewScope("none");
+          revealArtboard?.(target.id);
         }
         return;
       }
@@ -109,5 +136,5 @@ export function useEditorShortcuts(isExportOpen: boolean, language: Language, se
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [clearSelection, copySelectedLoader, deleteSelectedLoader, duplicateSelectedLoader, isExportOpen, language, pasteLoader, setPreviewScope]);
+  }, [clearSelection, copySelectedLoader, deleteSelectedLoader, duplicateSelectedLoader, isExportOpen, language, pasteLoader, revealArtboard, selectLoader, setPreviewScope]);
 }

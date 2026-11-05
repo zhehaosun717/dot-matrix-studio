@@ -110,6 +110,14 @@ export function useCanvasViewport({ loaders, canvas, sequenceGroups, selectedLoa
         bottom = Math.min(bottom, sidebarRect.top - viewportRect.top - 24);
       }
     }
+    // The frame strip of a selected sequence floats over the bottom of the canvas.
+    const strip = document.querySelector<HTMLElement>(".frame-strip__panel");
+    if (strip) {
+      const stripRect = strip.getBoundingClientRect();
+      if (stripRect.top < viewportRect.bottom && stripRect.bottom > viewportRect.top) {
+        bottom = Math.min(bottom, stripRect.top - viewportRect.top - 16);
+      }
+    }
     return { left: edgePadding, right, top: 64, bottom };
   }
 

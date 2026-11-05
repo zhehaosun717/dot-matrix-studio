@@ -36,6 +36,8 @@ type DrawState = {
   pixelClipboard: PixelClipboard | null;
   /** What Ctrl+V pastes: the last thing copied, pixels or a whole artboard. */
   lastCopy: "pixels" | "artboard" | null;
+  /** Show the neighbouring frames faintly on the selected frame of a sequence. */
+  onionSkin: boolean;
   setTool: (tool: DrawTool) => void;
   setBrushColor: (hex: string) => void;
   setFillTolerance: (value: number) => void;
@@ -48,6 +50,7 @@ type DrawState = {
   setFloatingLayer: (layerId: string | null) => void;
   setPixelClipboard: (clipboard: PixelClipboard) => void;
   setLastCopy: (kind: "pixels" | "artboard") => void;
+  setOnionSkin: (value: boolean) => void;
 };
 
 function loadRecent(): string[] {
@@ -83,6 +86,7 @@ export const useDrawStore = create<DrawState>((set, get) => ({
   floatingLayerId: null,
   pixelClipboard: null,
   lastCopy: null,
+  onionSkin: false,
   setTool: (tool) => {
     const current = get().tool;
     if (tool === current) return;
@@ -105,5 +109,6 @@ export const useDrawStore = create<DrawState>((set, get) => ({
   setSelection: (selection) => set({ selection, floatingLayerId: null }),
   setFloatingLayer: (layerId) => set({ floatingLayerId: layerId }),
   setPixelClipboard: (clipboard) => set({ pixelClipboard: clipboard, lastCopy: "pixels" }),
-  setLastCopy: (kind) => set({ lastCopy: kind })
+  setLastCopy: (kind) => set({ lastCopy: kind }),
+  setOnionSkin: (value) => set({ onionSkin: value })
 }));
