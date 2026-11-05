@@ -407,6 +407,13 @@ type ProjectFilesBridge = {
 
 ### 7.2 设计
 
+> **已实现（`feat/core-history`）**：`src/core/history.ts` 是通用的历史管理器，`src/core/document/commands.ts` 是作用在 Workspace 上的命令，测试是 `scripts/test-history.cjs`。两者都还没有接入编辑器，**以代码为准**。实现与下面草案的差异：
+>
+> - 历史是不可变的值：`commit` / `undo` / `redo` 都接收 `(history, state)`，返回新的 `{ history, state }`。
+> - “合并”的做法是把命令追加进上一步：撤销时按相反顺序逐条还原，不需要每种命令自己实现合并。
+> - 一步被撤销、重做，或者所在的手势已经结束后，就标为“关闭”，之后的提交不会再并入这一步。
+> - 删除类命令（`removeLayer`、`removeFrame`、`removeDocument`）由构造函数从当前 workspace 里取出要删除的内容，这样 `revert` 能原样放回去。
+
 ```ts
 /** 一次可撤销的修改。apply / revert 都是纯函数，输入输出都是不可变的 Workspace。 */
 export interface Command {
