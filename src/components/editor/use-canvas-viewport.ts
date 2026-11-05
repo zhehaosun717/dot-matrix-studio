@@ -88,6 +88,51 @@ export function useCanvasViewport({ loaders, canvas, sequenceGroups, selectedLoa
     zoomTo(canvas.zoom * delta, event.clientX, event.clientY);
   }
 
+  /**
+   * The part of the viewport (in viewport pixels) not covered by the top bar, the bottom controls or the
+   * settings sidebar on the right; with bottomSheet, also not by the sidebar when narrow windows put it below.
+   */
+  function visibleRegion(viewport: HTMLDivElement, bottomSheet: boolean) {
+    const viewportRect = viewport.getBoundingClientRect();
+    const edgePadding = 48;
+    let right = viewportRect.width - edgePadding;
+    let bottom = viewportRect.height - 72;
+    const sidebar = document.querySelector<HTMLElement>(".settings-sidebar.is-open:not(.is-hidden)");
+
+    if (sidebar) {
+      const sidebarRect = sidebar.getBoundingClientRect();
+      const overlapsViewport = sidebarRect.top < viewportRect.bottom && sidebarRect.bottom > viewportRect.top;
+      const occupiesRightSide = sidebarRect.left > viewportRect.left + viewportRect.width / 2;
+      const occupiesBottom = sidebarRect.top > viewportRect.top + viewportRect.height / 2;
+      if (overlapsViewport && occupiesRightSide) {
+        right = Math.min(right, sidebarRect.left - viewportRect.left - 24);
+      } else if (bottomSheet && overlapsViewport && occupiesBottom) {
+        bottom = Math.min(bottom, sidebarRect.top - viewportRect.top - 24);
+      }
+    }
+    return { left: edgePadding, right, top: 64, bottom };
+  }
+
+  /**
+   * Pans (keeping the zoom) just enough for the given canvas area to be visible, e.g. a new artboard that
+   * would otherwise appear under the sidebar. An area larger than the visible part is centred.
+   */
+  function revealBounds(bounds: { left: number; top: number; width: number; height: number }) {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+    const area = visibleRegion(viewport, true);
+    const shift = (start: number, end: number, min: number, max: number) => {
+      if (end - start > max - min) return (min + max) / 2 - (start + end) / 2;
+      if (end > max) return max - end;
+      if (start < min) return min - start;
+      return 0;
+    };
+    const { zoom, panX, panY } = canvas;
+    const dx = shift(bounds.left * zoom + panX, (bounds.left + bounds.width) * zoom + panX, area.left, area.right);
+    const dy = shift(bounds.top * zoom + panY, (bounds.top + bounds.height) * zoom + panY, area.top, area.bottom);
+    if (dx || dy) setCanvasView({ zoom, panX: Number((panX + dx).toFixed(2)), panY: Number((panY + dy).toFixed(2)) });
+  }
+
   function centerCanvasContent() {
     const viewport = viewportRef.current;
     if (!viewport || loaders.length === 0) {
@@ -100,22 +145,8 @@ export function useCanvasViewport({ loaders, canvas, sequenceGroups, selectedLoa
     const contentBottom = Math.max(...loaders.map((loader) => loader.artboard.y + loader.artboard.height));
     const contentWidth = Math.max(contentRight - contentLeft, 1);
     const contentHeight = Math.max(contentBottom - contentTop, 1);
-    const viewportRect = viewport.getBoundingClientRect();
     const edgePadding = 48;
-    let visibleLeft = edgePadding;
-    let visibleRight = viewportRect.width - edgePadding;
-    const visibleTop = 64;
-    const visibleBottom = viewportRect.height - 72;
-    const sidebar = document.querySelector<HTMLElement>(".settings-sidebar.is-open:not(.is-hidden)");
-
-    if (sidebar) {
-      const sidebarRect = sidebar.getBoundingClientRect();
-      const overlapsViewport = sidebarRect.top < viewportRect.bottom && sidebarRect.bottom > viewportRect.top;
-      const occupiesRightSide = sidebarRect.left > viewportRect.left + viewportRect.width / 2;
-      if (overlapsViewport && occupiesRightSide) {
-        visibleRight = Math.min(visibleRight, sidebarRect.left - viewportRect.left - 24);
-      }
-    }
+    const { left: visibleLeft, right: visibleRight, top: visibleTop, bottom: visibleBottom } = visibleRegion(viewport, false);
 
     const availableWidth = Math.max(visibleRight - visibleLeft, 1);
     const availableHeight = Math.max(visibleBottom - visibleTop, 1);
@@ -257,7 +288,8 @@ export function useCanvasViewport({ loaders, canvas, sequenceGroups, selectedLoa
     handleViewportPointerDown,
     handleViewportPointerMove,
     endPan,
-    centerCanvasContent
+    centerCanvasContent,
+    revealBounds
   };
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { EditorCanvas } from "@/components/editor/editor-canvas";
 import { EditorTopbar } from "@/components/editor/editor-topbar";
 import { ExportPanel } from "@/components/editor/export-panel";
@@ -56,6 +56,22 @@ export function EditorApp() {
   }, [hydrate]);
 
   useEditorShortcuts(isExportOpen, language, setPreviewScope);
+
+  // A new artboard, frame or imported animation is selected but may land under the sidebar or off screen:
+  // bring it into view. Loading the saved project (hydration) is not a new artboard.
+  const loaderCount = project.loaders.length;
+  const seenCount = useRef<number | null>(null);
+  useEffect(() => {
+    if (!hydrated) return;
+    const previous = seenCount.current;
+    seenCount.current = loaderCount;
+    if (previous === null || loaderCount <= previous) return;
+    const target = layout.selectedSequenceBounds
+      ?? (selectedLoader ? { left: selectedLoader.artboard.x, top: selectedLoader.artboard.y, width: selectedLoader.artboard.width, height: selectedLoader.artboard.height } : null);
+    if (target) viewport.revealBounds(target);
+    // Only a change in the number of artboards should move the view.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated, loaderCount]);
 
   const t = uiCopy[language];
 
