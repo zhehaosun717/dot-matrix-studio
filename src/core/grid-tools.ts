@@ -5,9 +5,8 @@
  * fill: bucket fill; pick: eyedropper; select: drag a box to copy, cut, delete or move.
  */
 export type DrawTool = "brush" | "erase" | "line" | "rect" | "ellipse" | "fill" | "pick" | "select";
-export const DRAW_TOOLS: readonly DrawTool[] = ["brush", "erase", "line", "rect", "ellipse", "fill", "pick", "select"];
 export type ShapeTool = "line" | "rect" | "ellipse";
-export const SHAPE_TOOLS: readonly ShapeTool[] = ["line", "rect", "ellipse"];
+const SHAPE_TOOLS: readonly ShapeTool[] = ["line", "rect", "ellipse"];
 export const isShapeTool = (tool: DrawTool): tool is ShapeTool => (SHAPE_TOOLS as readonly string[]).includes(tool);
 
 const rowOf = (cell: number, cols: number) => Math.floor(cell / cols);
