@@ -45,7 +45,7 @@ Project
 4. **撤销靠整份快照。** `editor-history.ts` 每一步都保存整个 `Project`，最多 100 份。
 5. **存储有隐患。**
    - 作品只存在 localStorage 里，按“源”隔离，也就是 `http://127.0.0.1:<端口>`。`desktop/src/main.ts` 在 47321 端口被占用时会改用随机端口，这时编辑器换了源，之前的作品就“看不到”了（数据还在，只是读不到）。
-   - `hydrate()`（`src/stores/editor/project-slice.ts`）在存储里的 `version` 不等于 `PROJECT_VERSION`（目前是 `"0.17.0"`）时，**会直接用示例项目覆盖存储**。一旦以后提升版本号，用户的作品就会被清掉。这个问题在迁移方案里必须先修掉。
+   - `hydrate()`（`src/stores/editor/project-slice.ts`）原来在存储里的 `version` 不等于 `PROJECT_VERSION`（目前是 `"0.17.0"`）时，**会直接用示例项目覆盖存储**；存储里的文字不是合法 JSON 时也一样。**已在 `fix/hydrate-keeps-projects` 修复**，见 3.1 节。
 
 ---
 
@@ -187,7 +187,15 @@ export function frameToRgba(doc: Document, frameIndex: number): Uint8ClampedArra
 
 ### 3.1 先修掉“版本不符就覆盖”的问题
 
-在做任何迁移之前，单独提交一个小改动：版本不符时**不覆盖**存储，而是先原样备份，再按版本链迁移。否则未来任何一次版本号提升都会清空作品。这个改动在当前模型下就可以做，而且应该最先做。
+**已修复（`fix/hydrate-keeps-projects`）。** 现在的行为：
+
+- 版本一致：照常读取，存储不动。
+- 版本不一致或存储里的文字不是项目：先把原文原样复制到 `dot-motion-builder.project.v9.backup.<旧版本或 unreadable>.<时间>`，每份备份用新键、永不覆盖。
+- 版本不一致时，用 `migrateStoredProject` 尽量迁移：读得了的画板全部保留，读不了的画板跳过；一个都读不了才退回示例项目。
+- 存储满了、连备份都写不进去时，原文留在原处不被覆盖：每次保存都会先重试备份，失败就报告保存失败（界面上出现保存失败横幅），直到腾出空间备份成功为止。
+- 测试：`scripts/test-persistence.cjs`。
+
+以后转换到 `.dms` 时也沿用同样的原则：先原样备份，再迁移，迁移失败也不删除原数据。
 
 ### 3.2 映射规则
 
@@ -450,7 +458,7 @@ export type Transaction = { label: string; commands: Command[]; source: "user" |
 
 每一步都是独立的 PR，都要在本机 Windows 和真实点阵屏上验收后再合并。
 
-1. **修复 `hydrate` 版本不符时覆盖作品的问题**（3.1 节）。改动小，风险高、收益大，应该最先做。
+1. ~~修复 `hydrate` 版本不符时覆盖作品的问题~~（3.1 节，已修复）。
 2. **决定第 4 节的删除清单**，按项分别提 PR，删除功能和删除相关测试断言放在同一个 PR 里，逐条说明。先删掉不要的东西，新模型就能更小。
 3. **新数据模型和迁移函数**，只在 `src/core/` 里实现，包括 `compositeFrame`、`documentToLoader` 和 `migrate`，并有完整测试，不接入界面。
 4. **store 切换到新模型**：渲染器通过 `documentToLoader` 适配，`idotmatrix/` 不改动。在真机上验证实时同步、存到屏幕和 agent 状态画面。
