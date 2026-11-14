@@ -13,7 +13,17 @@ const {createMockProject} = require('../src/lib/mock-project.ts');
 const {getDefaultMotionConfig} = require('../src/lib/motion-presets.ts');
 const {MATRIX_SIZE} = require('../src/lib/idotmatrix/constants.ts');
 const {encodePng} = require('../src/lib/idotmatrix/png-encoder.ts');
-const {buildImageChunks, buildImageFrame, isImageAck, DIY_MODE_ON, crc32} = require('../src/lib/idotmatrix/protocol.ts');
+const {
+  buildImageChunks,
+  buildImageFrame,
+  isImageAck,
+  DIY_MODE_ON,
+  SCREEN_OFF,
+  buildBrightnessCommand,
+  buildRotateCommand,
+  buildColorCommand,
+  crc32
+} = require('../src/lib/idotmatrix/protocol.ts');
 const {MatrixLink} = require('../src/lib/idotmatrix/matrix-link.ts');
 const {LiveFrameStream} = require('../src/lib/idotmatrix/live-stream.ts');
 const {renderMatrixStill, renderMatrixAt, renderMatrixFrames, getMatrixLayout} = require('../src/lib/idotmatrix/render-frames.ts');
@@ -217,6 +227,37 @@ async function main() {
   const beforeReenter = Date.now();
   await reenterLink.showFrame(png);
   assert(Date.now() - beforeReenter >= 100, `entering DIY after a GIF waits for cooldown (${Date.now() - beforeReenter} ms)`);
+
+  // Hardware brightness and 180° flip keep DIY mode; clear/screen-off drain in-flight frames and exit DIY mode.
+  const hwPanel = fakePanel();
+  const hwLink = new MatrixLink(hwPanel.gatt, fast);
+  await hwLink.showFrame(png);
+  hwPanel.writes.length = 0;
+  await hwLink.send(buildBrightnessCommand(50));
+  await hwLink.send(buildRotateCommand(true));
+  await hwLink.showFrame(png);
+  const keepMsgs = messages(hwPanel.writes);
+  assert(!keepMsgs.some(m => Buffer.from(m).equals(Buffer.from(DIY_MODE_ON))), 'brightness and rotate keep DIY mode');
+  await hwLink.send(buildColorCommand(0, 0, 0));
+  hwPanel.writes.length = 0;
+  await hwLink.showFrame(png);
+  assert.deepEqual([...messages(hwPanel.writes)[0]], [...DIY_MODE_ON], 'colour clear leaves DIY mode so the next frame re-enters it');
+  await hwLink.send(SCREEN_OFF);
+  hwPanel.writes.length = 0;
+  await hwLink.showFrame(png);
+  assert.deepEqual([...messages(hwPanel.writes)[0]], [...DIY_MODE_ON], 'screen-off leaves DIY mode so the next frame re-enters it');
+
+  const hwDrainPanel = fakePanel({ackDelayMs: 60});
+  const baseHwWrite = hwDrainPanel.gatt.write.writeValueWithoutResponse;
+  hwDrainPanel.gatt.write.writeValueWithoutResponse = async data => {
+    if (data.length === 7 && data[2] === 2) hwDrainPanel.log.push('cmdColor');
+    return baseHwWrite(data);
+  };
+  const hwDrainLink = new MatrixLink(hwDrainPanel.gatt, {...fast, frameAckTimeoutMs: 200});
+  await hwDrainLink.showFrame(png);
+  await hwDrainLink.send(buildColorCommand(0, 0, 0));
+  const hwAckIdx = hwDrainPanel.log.indexOf('ack0'), hwColorIdx = hwDrainPanel.log.indexOf('cmdColor');
+  assert(hwAckIdx >= 0 && hwColorIdx > hwAckIdx, `colour clear drains the in-flight frame first (${hwDrainPanel.log.join(' ')})`);
 
   // ------------------------------------------------------------ latest-frame-wins stream
   const pushed = [];

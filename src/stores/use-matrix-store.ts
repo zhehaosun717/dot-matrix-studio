@@ -7,6 +7,17 @@ import { FrameSource, LiveFrameStream } from "@/lib/idotmatrix/live-stream";
 import { MatrixLink } from "@/lib/idotmatrix/matrix-link";
 import { applyPanelTuning, DEFAULT_PANEL_TUNING, PanelTuning, sanitizePanelTuning } from "@/lib/idotmatrix/panel-tuning";
 import { encodePng } from "@/lib/idotmatrix/png-encoder";
+import {
+  buildBrightnessCommand,
+  buildClockModeCommand,
+  buildColorCommand,
+  buildRotateCommand,
+  buildSwitchplateCommand,
+  buildSyncTimeCommand,
+  clampHardwareBrightness,
+  MAX_HARDWARE_BRIGHTNESS,
+  SCREEN_ON
+} from "@/lib/idotmatrix/protocol";
 import { ScreenMirror, startScreenMirror } from "@/lib/idotmatrix/screen-mirror";
 import { connectMatrix, MatrixError, MatrixErrorKind } from "@/lib/idotmatrix/web-bluetooth";
 
@@ -23,6 +34,29 @@ export type MatrixStatus =
   | { kind: "sent"; missedAcks: number; agentPaused: boolean }
   | { kind: "error"; reason: MatrixErrorKind; detail: string };
 
+export type PanelHardwareSettings = {
+  /** Hardware global LED brightness percentage (5..100). */
+  brightness: number;
+  /** Whether the panel display orientation is rotated 180 degrees. */
+  flipped180: boolean;
+};
+
+export const DEFAULT_HARDWARE_SETTINGS: PanelHardwareSettings = {
+  brightness: MAX_HARDWARE_BRIGHTNESS,
+  flipped180: false
+};
+
+/** Normalises stored or patched hardware settings, keeping unknown inputs safe. */
+export function sanitizeHardwareSettings(input?: Partial<PanelHardwareSettings> | null): PanelHardwareSettings {
+  const source = input && typeof input === "object" ? input : {};
+  const brightness =
+    typeof source.brightness === "number" && Number.isFinite(source.brightness)
+      ? clampHardwareBrightness(source.brightness)
+      : DEFAULT_HARDWARE_SETTINGS.brightness;
+  const flipped180 = typeof source.flipped180 === "boolean" ? source.flipped180 : DEFAULT_HARDWARE_SETTINGS.flipped180;
+  return { brightness, flipped180 };
+}
+
 type MatrixState = {
   link: MatrixLink | null;
   status: MatrixStatus;
@@ -32,6 +66,10 @@ type MatrixState = {
   pixelGaps: boolean;
   /** Colour correction applied to every frame and GIF sent to the panel (not to the editor or exports). */
   tuning: PanelTuning;
+  /** Whether the physical LED switchplate is powered on. */
+  screenOn: boolean;
+  /** Persistent panel hardware preferences re-applied on connect. */
+  hardware: PanelHardwareSettings;
   /** Desktop app: agents may drive the panel whenever you are not using live sync or mirroring. */
   agentEnabled: boolean;
   agentScene: AgentScene | null;
@@ -46,6 +84,11 @@ type MatrixState = {
   setShowInactive: (value: boolean) => void;
   setPixelGaps: (value: boolean) => void;
   setTuning: (patch: Partial<PanelTuning>) => void;
+  setScreenOn: (on: boolean) => Promise<void>;
+  setHardwareBrightness: (percent: number) => Promise<void>;
+  setFlipped180: (flipped: boolean) => Promise<void>;
+  clearPanel: () => Promise<void>;
+  showHardwareClock: (style?: number) => Promise<void>;
   showAgentScene: (scene: AgentScene) => void;
   setAgentEnabled: (enabled: boolean) => void;
   disconnect: () => void;
@@ -68,26 +111,34 @@ let liveRequest = 0;
 let agentSince = 0;
 /** The last frame handed to the stream, before tuning: re-sent when the tuning changes. */
 let lastLiveFrame: Uint8Array | null = null;
+let brightnessLoop: Promise<void> | null = null;
+let brightnessDirty = false;
 
 const TUNING_STORAGE_KEY = "dot-matrix-panel-tuning";
+const HARDWARE_STORAGE_KEY = "dot-matrix-panel-hardware";
 
-function loadTuning(): PanelTuning {
+function loadStored<T>(key: string, sanitize: (raw: unknown) => T, fallback: T, label: string): T {
   try {
-    const stored = typeof window === "undefined" ? null : window.localStorage.getItem(TUNING_STORAGE_KEY);
-    return stored ? sanitizePanelTuning(JSON.parse(stored)) : DEFAULT_PANEL_TUNING;
+    const stored = typeof window === "undefined" ? null : window.localStorage.getItem(key);
+    return stored ? sanitize(JSON.parse(stored)) : fallback;
   } catch (error) {
-    console.warn("[iDotMatrix] ignoring unreadable panel tuning", error);
-    return DEFAULT_PANEL_TUNING;
+    console.warn(`[iDotMatrix] ignoring unreadable ${label}`, error);
+    return fallback;
   }
 }
 
-function saveTuning(tuning: PanelTuning) {
+function saveStored(key: string, value: unknown, label: string) {
   try {
-    window.localStorage.setItem(TUNING_STORAGE_KEY, JSON.stringify(tuning));
+    window.localStorage.setItem(key, JSON.stringify(value));
   } catch (error) {
-    console.warn("[iDotMatrix] could not save panel tuning", error);
+    console.warn(`[iDotMatrix] could not save ${label}`, error);
   }
 }
+
+const loadTuning = () => loadStored(TUNING_STORAGE_KEY, (raw) => sanitizePanelTuning(raw as Partial<PanelTuning>), DEFAULT_PANEL_TUNING, "panel tuning");
+const saveTuning = (tuning: PanelTuning) => saveStored(TUNING_STORAGE_KEY, tuning, "panel tuning");
+const loadHardware = () => loadStored(HARDWARE_STORAGE_KEY, (raw) => sanitizeHardwareSettings(raw as Partial<PanelHardwareSettings>), DEFAULT_HARDWARE_SETTINGS, "panel hardware settings");
+const saveHardware = (hardware: PanelHardwareSettings) => saveStored(HARDWARE_STORAGE_KEY, hardware, "panel hardware settings");
 
 function stopMirror() {
   lastLiveFrame = null;
@@ -104,12 +155,14 @@ export const useMatrixStore = create<MatrixState>((set, get) => {
   const dropBrokenLink = (broken: MatrixLink, error: unknown) => {
     if (!isCurrent(broken)) return;
     liveRequest++;
+    brightnessDirty = false;
     stopMirror();
     stream?.cancel();
     stream = null;
     set({
       link: null,
       live: "off",
+      screenOn: true,
       lastDisconnect: "lost",
       status: toErrorStatus(error, "upload-failed")
     });
@@ -118,8 +171,8 @@ export const useMatrixStore = create<MatrixState>((set, get) => {
 
   /** Puts the current agent scene on the panel; returns false when it cannot or should not. */
   const playAgent = () => {
-    const { link, agentEnabled, agentScene } = get();
-    if (!link || !agentEnabled || !agentScene || !stream || link.uploading) return false;
+    const { link, agentEnabled, agentScene, screenOn } = get();
+    if (!link || !agentEnabled || !agentScene || !stream || !screenOn || link.uploading) return false;
     stream.cancel();
     stream.reset();
     if (isAnimated(agentScene)) stream.play((displayAt) => renderScene(agentScene, displayAt - agentSince));
@@ -136,6 +189,28 @@ export const useMatrixStore = create<MatrixState>((set, get) => {
     set({ live: "off", status: get().link ? { kind: "connected" } : { kind: "idle" } });
   };
 
+  const pauseLiveForCommand = async () => {
+    stopLive();
+    if (get().agentEnabled) set({ agentEnabled: false });
+    await stream?.idle();
+  };
+
+  const ensureScreenOn = async (link: MatrixLink) => {
+    if (get().screenOn) return;
+    set({ screenOn: true });
+    await link.send(SCREEN_ON);
+  };
+
+  const withActiveLink = async (fn: (link: MatrixLink) => Promise<void>) => {
+    const link = get().link;
+    if (!link || link.uploading) return;
+    try {
+      await fn(link);
+    } catch (error) {
+      dropBrokenLink(link, error);
+    }
+  };
+
   return {
     link: null,
     status: { kind: "idle" },
@@ -143,25 +218,31 @@ export const useMatrixStore = create<MatrixState>((set, get) => {
     showInactive: true,
     pixelGaps: false,
     tuning: loadTuning(),
+    screenOn: true,
+    hardware: loadHardware(),
     agentEnabled: false,
     agentScene: null,
     lastDisconnect: null,
 
     connect: async () => {
       set({ status: { kind: "connecting" } });
+      let opened: MatrixLink | null = null;
       try {
         const link = await connectMatrix((closed) => {
           if (!isCurrent(closed)) return;
           liveRequest++;
+          brightnessDirty = false;
           stopMirror();
           stream = null;
           set({
             link: null,
             live: "off",
+            screenOn: true,
             lastDisconnect: "lost",
             status: closed.uploading ? { kind: "error", reason: "upload-failed", detail: "disconnected" } : { kind: "idle" }
           });
         });
+        opened = link;
         stream = new LiveFrameStream(async (rgb, stillWanted) => {
           lastLiveFrame = rgb;
           // Plain RGB PNGs: indexed PNGs were acknowledged by the panel but showed black in live sync
@@ -171,10 +252,14 @@ export const useMatrixStore = create<MatrixState>((set, get) => {
         }, {
           onError: (error) => dropBrokenLink(link, error)
         });
-        set({ link, status: { kind: "connected" }, lastDisconnect: null });
+        const { hardware } = get();
+        if (hardware.flipped180) await link.send(buildRotateCommand(true));
+        if (hardware.brightness !== MAX_HARDWARE_BRIGHTNESS) await link.send(buildBrightnessCommand(hardware.brightness));
+        set({ link, screenOn: true, status: { kind: "connected" }, lastDisconnect: null });
         playAgent();
         return link;
       } catch (error) {
+        opened?.disconnect();
         const cancelled = error instanceof MatrixError && error.kind === "cancelled";
         set({ status: cancelled ? { kind: "idle" } : toErrorStatus(error, "connect-failed") });
         return null;
@@ -194,6 +279,7 @@ export const useMatrixStore = create<MatrixState>((set, get) => {
       };
       update({ kind: "uploading", sent: 0, total: 1 });
       try {
+        await ensureScreenOn(link);
         const result = await link.uploadGif(gif, (sent, total) => update({ kind: "uploading", sent, total }));
         stream?.reset();
         // The GIF now lives in the panel's memory; agent scenes would replace it on the next hook, so the
@@ -242,6 +328,19 @@ export const useMatrixStore = create<MatrixState>((set, get) => {
         }
         mirror = started;
       }
+      if (!get().screenOn) {
+        try {
+          await ensureScreenOn(link);
+        } catch (error) {
+          stopMirror();
+          dropBrokenLink(link, error);
+          return;
+        }
+        if (request !== liveRequest || !isCurrent(link)) {
+          stopMirror();
+          return;
+        }
+      }
       set({ live: source, status: { kind: "live", source } });
     },
 
@@ -271,6 +370,72 @@ export const useMatrixStore = create<MatrixState>((set, get) => {
       }
     },
 
+    setScreenOn: async (on) => {
+      set({ screenOn: on });
+      if (!on) {
+        stopLive();
+        await stream?.idle();
+      }
+      await withActiveLink(async (link) => {
+        await link.send(buildSwitchplateCommand(on));
+        if (on && isCurrent(link) && get().live === "off") playAgent();
+      });
+    },
+
+    setHardwareBrightness: async (percent) => {
+      const hardware = sanitizeHardwareSettings({ ...get().hardware, brightness: percent });
+      set({ hardware });
+      saveHardware(hardware);
+      const link = get().link;
+      if (!link || link.uploading) return;
+      if (brightnessLoop) {
+        brightnessDirty = true;
+        return brightnessLoop;
+      }
+      brightnessLoop = (async () => {
+        try {
+          do {
+            brightnessDirty = false;
+            const active = get().link;
+            if (!active || active.uploading) break;
+            const level = get().hardware.brightness;
+            try {
+              await active.send(buildBrightnessCommand(level));
+            } catch (error) {
+              dropBrokenLink(active, error);
+              break;
+            }
+          } while (brightnessDirty);
+        } finally {
+          brightnessDirty = false;
+          brightnessLoop = null;
+        }
+      })();
+      return brightnessLoop;
+    },
+
+    setFlipped180: async (flipped) => {
+      const hardware = sanitizeHardwareSettings({ ...get().hardware, flipped180: flipped });
+      set({ hardware });
+      saveHardware(hardware);
+      await withActiveLink((link) => link.send(buildRotateCommand(hardware.flipped180)));
+    },
+
+    clearPanel: async () => {
+      await pauseLiveForCommand();
+      set({ screenOn: true });
+      await withActiveLink((link) => link.send(buildColorCommand(0, 0, 0)));
+    },
+
+    showHardwareClock: async (style = 0) => {
+      await pauseLiveForCommand();
+      await withActiveLink(async (link) => {
+        await ensureScreenOn(link);
+        await link.send(buildSyncTimeCommand());
+        await link.send(buildClockModeCommand(style));
+      });
+    },
+
     showAgentScene: (scene) => {
       // The same scene again (e.g. a tray tool re-syncing) keeps its clock, so its intro does not replay.
       if (!sameScene(get().agentScene, scene)) agentSince = Date.now();
@@ -288,10 +453,11 @@ export const useMatrixStore = create<MatrixState>((set, get) => {
 
     disconnect: () => {
       liveRequest++;
+      brightnessDirty = false;
       stopMirror();
       stream = null;
       get().link?.disconnect();
-      set({ link: null, live: "off", status: { kind: "idle" }, lastDisconnect: "manual" });
+      set({ link: null, live: "off", screenOn: true, status: { kind: "idle" }, lastDisconnect: "manual" });
     }
   };
 });

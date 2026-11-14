@@ -15,7 +15,23 @@ const {MATRIX_SIZE, GIF_BUDGET_BYTES, MAX_GIF_FRAMES} = require('../src/lib/idot
 const {getMatrixLayout, renderMatrixFrames} = require('../src/lib/idotmatrix/render-frames.ts');
 const {encodeGif} = require('../src/lib/idotmatrix/gif-encoder.ts');
 const {buildMatrixGif} = require('../src/lib/idotmatrix/build-gif.ts');
-const {crc32, buildGifChunks, isGifAck, isGifErrorAck, SCREEN_ON} = require('../src/lib/idotmatrix/protocol.ts');
+const {
+  crc32,
+  buildGifChunks,
+  isGifAck,
+  isGifErrorAck,
+  SCREEN_ON,
+  SCREEN_OFF,
+  MIN_HARDWARE_BRIGHTNESS,
+  MAX_HARDWARE_BRIGHTNESS,
+  clampHardwareBrightness,
+  buildSwitchplateCommand,
+  buildBrightnessCommand,
+  buildRotateCommand,
+  buildColorCommand,
+  buildSyncTimeCommand,
+  buildClockModeCommand
+} = require('../src/lib/idotmatrix/protocol.ts');
 const {MatrixLink} = require('../src/lib/idotmatrix/matrix-link.ts');
 const {MAX_GRID_SIZE} = require('../src/lib/grid-limits.ts');
 const {getCanvasGridMetrics, CANVAS_FRAME_INSET, CANVAS_GRID_PADDING} = require('../src/lib/canvas-grid-metrics.ts');
@@ -474,6 +490,23 @@ async function main() {
   await cooledLink.uploadGif(blob);
   assert(Date.now() - t0 >= 100, 'back-to-back uploads respect the cooldown');
   assert.deepEqual(Array.from(SCREEN_ON), [5, 0, 7, 1, 1]);
+  assert.deepEqual(Array.from(SCREEN_OFF), [5, 0, 7, 1, 0]);
+  assert.deepEqual(Array.from(buildSwitchplateCommand(true)), [5, 0, 7, 1, 1]);
+  assert.deepEqual(Array.from(buildSwitchplateCommand(false)), [5, 0, 7, 1, 0]);
+  assert.equal(clampHardwareBrightness(-10), MIN_HARDWARE_BRIGHTNESS);
+  assert.equal(clampHardwareBrightness(180), MAX_HARDWARE_BRIGHTNESS);
+  assert.equal(clampHardwareBrightness(Number.NaN), MAX_HARDWARE_BRIGHTNESS);
+  assert.deepEqual(Array.from(buildBrightnessCommand(50)), [5, 0, 4, 128, 50]);
+  assert.deepEqual(Array.from(buildBrightnessCommand(1)), [5, 0, 4, 128, 5]);
+  assert.deepEqual(Array.from(buildBrightnessCommand(150)), [5, 0, 4, 128, 100]);
+  assert.deepEqual(Array.from(buildRotateCommand(false)), [5, 0, 6, 128, 0]);
+  assert.deepEqual(Array.from(buildRotateCommand(true)), [5, 0, 6, 128, 1]);
+  assert.deepEqual(Array.from(buildColorCommand(12, 34, 56)), [7, 0, 2, 2, 12, 34, 56]);
+  assert.deepEqual(Array.from(buildColorCommand(-5, 300, 128.6)), [7, 0, 2, 2, 0, 255, 129]);
+  assert.deepEqual(Array.from(buildSyncTimeCommand(new Date(2026, 10, 14, 3, 4, 5))), [11, 0, 1, 128, 26, 11, 14, 6, 3, 4, 5]);
+  assert.deepEqual(Array.from(buildSyncTimeCommand(new Date(2026, 10, 15, 0, 0, 0))), [11, 0, 1, 128, 26, 11, 15, 7, 0, 0, 0]);
+  assert.deepEqual(Array.from(buildClockModeCommand()), [8, 0, 6, 1, 0xc0, 255, 255, 255]);
+  assert.deepEqual(Array.from(buildClockModeCommand(3, {showDate: false, hour24: false, r: 10, g: 20, b: 30})), [8, 0, 6, 1, 3, 10, 20, 30]);
 
   // A GIF error response (05 00 01 00 02) triggers a clean restart from chunk 0 rather than pushing bad chunks.
   const recoverable = fakePanel({ackCodes: [2, 1, 3]});

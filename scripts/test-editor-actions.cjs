@@ -279,9 +279,11 @@ const sorted = (cells) => [...cells].sort((a, b) => a - b);
 // Preferences kept in localStorage.
 
 const TUNING_KEY = 'dot-matrix-panel-tuning';
+const HARDWARE_KEY = 'dot-matrix-panel-hardware';
 const RECENT_KEY = 'dot-matrix-recent-colors';
 const {DEFAULT_PANEL_TUNING, PANEL_TUNING_KEYS} = require('../src/lib/idotmatrix/panel-tuning.ts');
-const openMatrix = (storage) => load(storage, ['stores/use-matrix-store.ts'])[0].useMatrixStore;
+const openMatrixModule = (storage) => load(storage, ['stores/use-matrix-store.ts'])[0];
+const openMatrix = (storage) => openMatrixModule(storage).useMatrixStore;
 const openDraw = (storage) => load(storage, ['stores/use-draw-store.ts'])[0].useDrawStore;
 
 // Panel tuning: what is stored is read back sanitised; unreadable or missing input gives the defaults.
@@ -496,4 +498,108 @@ const pathOf = (fn) => {
   assert.equal(e.colorAt(e.at(5, 4), frames[0].id), '#FF0000');
 }
 
-console.log('PASS: editor actions — selection copy, cut, paste, delete, move and nudge; panel tuning and recent colours kept in storage; agent request errors.');
+// ---------------------------------------------------------------------------------------------------
+// Panel hardware settings (brightness, 180° flip) persistence and connected command dispatch.
+
+(async () => {
+  const empty = makeStorage();
+  const emptyMod = openMatrixModule(empty);
+  const {DEFAULT_HARDWARE_SETTINGS} = emptyMod;
+  assert.deepEqual(emptyMod.useMatrixStore.getState().hardware, DEFAULT_HARDWARE_SETTINGS, 'nothing stored: hardware defaults');
+  assert.equal(emptyMod.useMatrixStore.getState().screenOn, true);
+  assert.equal(empty.writes, 0, 'reading hardware defaults writes nothing');
+
+  warnings.length = 0;
+  assert.deepEqual(openMatrix(makeStorage({[HARDWARE_KEY]: '{bad json'})).getState().hardware, DEFAULT_HARDWARE_SETTINGS);
+  assert.equal(warnings.some((line) => line.includes('panel hardware settings')), true);
+
+  assert.deepEqual(
+    openMatrix(makeStorage({[HARDWARE_KEY]: JSON.stringify({brightness: 1, flipped180: 'yes', extra: 42})})).getState().hardware,
+    {brightness: 5, flipped180: false},
+    'hardware values are sanitised and clamped on load'
+  );
+
+  const blocked = makeStorage({[HARDWARE_KEY]: JSON.stringify({brightness: 60, flipped180: true})});
+  blocked.failReads = true;
+  assert.deepEqual(openMatrix(blocked).getState().hardware, DEFAULT_HARDWARE_SETTINGS, 'blocked storage falls back to defaults');
+  assert.deepEqual(openMatrix(null).getState().hardware, DEFAULT_HARDWARE_SETTINGS, 'no window falls back to defaults');
+
+  const storage = makeStorage();
+  const matrix = openMatrix(storage);
+  await matrix.getState().setHardwareBrightness(20);
+  await matrix.getState().setFlipped180(true);
+  assert.deepEqual(JSON.parse(storage.getItem(HARDWARE_KEY)), {brightness: 20, flipped180: true});
+  assert.deepEqual(openMatrix(storage).getState().hardware, {brightness: 20, flipped180: true}, 'hardware settings survive restart');
+
+  storage.failWrites = true;
+  warnings.length = 0;
+  await matrix.getState().setHardwareBrightness(80);
+  assert.equal(matrix.getState().hardware.brightness, 80, 'full storage does not block hardware brightness change');
+  assert.equal(warnings.some((line) => line.includes('could not save panel hardware settings')), true);
+
+  // Connected link dispatch, 1-slot brightness coalescing, screen wake, and error recovery.
+  const sent = [];
+  let failSend = false;
+  const fakeLink = {
+    name: 'IDM-TEST',
+    uploading: false,
+    async send(data) {
+      await Promise.resolve();
+      if (failSend) throw new Error('GATT disconnected');
+      sent.push(Array.from(data));
+    },
+    disconnect() {
+      sent.push('disconnect');
+    }
+  };
+  const liveMatrix = openMatrix(makeStorage());
+  liveMatrix.setState({link: fakeLink, status: {kind: 'connected'}, live: 'editor'});
+
+  await Promise.all([
+    liveMatrix.getState().setHardwareBrightness(25),
+    liveMatrix.getState().setHardwareBrightness(40),
+    liveMatrix.getState().setHardwareBrightness(2)
+  ]);
+  assert.equal(liveMatrix.getState().hardware.brightness, 5, 'brightness clamped to min 5');
+  assert.deepEqual(sent, [[5, 0, 4, 128, 25], [5, 0, 4, 128, 5]], 'in-flight brightness slider bursts coalesce to latest value');
+
+  sent.length = 0;
+  await liveMatrix.getState().setFlipped180(true);
+  assert.deepEqual(sent, [[5, 0, 6, 128, 1]], '180° flip sends hardware rotate command');
+
+  sent.length = 0;
+  await liveMatrix.getState().setScreenOn(false);
+  assert.equal(liveMatrix.getState().screenOn, false);
+  assert.equal(liveMatrix.getState().live, 'off', 'turning screen off stops live mode');
+  assert.deepEqual(sent, [[5, 0, 7, 1, 0]]);
+
+  sent.length = 0;
+  liveMatrix.setState({agentEnabled: true});
+  await liveMatrix.getState().showHardwareClock(2);
+  assert.equal(liveMatrix.getState().screenOn, true, 'clock mode wakes the screen');
+  assert.equal(liveMatrix.getState().agentEnabled, false, 'clock mode pauses agent display');
+  assert.equal(sent.length, 3);
+  assert.deepEqual(sent[0], [5, 0, 7, 1, 1], 'wakes switchplate before clock');
+  assert.deepEqual(sent[1].slice(0, 4), [11, 0, 1, 128], 'syncs panel clock time');
+  assert.deepEqual(sent[2], [8, 0, 6, 1, 0xc2, 255, 255, 255], 'switches panel to clock mode');
+
+  sent.length = 0;
+  liveMatrix.setState({agentEnabled: true, live: 'agent'});
+  await liveMatrix.getState().clearPanel();
+  assert.equal(liveMatrix.getState().agentEnabled, false);
+  assert.equal(liveMatrix.getState().live, 'off');
+  assert.deepEqual(sent, [[7, 0, 2, 2, 0, 0, 0]], 'clear sends solid black colour command');
+
+  sent.length = 0;
+  failSend = true;
+  await liveMatrix.getState().setFlipped180(false);
+  assert.equal(liveMatrix.getState().link, null, 'fatal GATT error drops the broken link');
+  assert.equal(liveMatrix.getState().lastDisconnect, 'lost');
+  assert.equal(liveMatrix.getState().status.reason, 'upload-failed');
+  assert.deepEqual(sent, ['disconnect']);
+
+  console.log('PASS: editor actions — selection copy, cut, paste, delete, move and nudge; panel tuning, hardware controls and recent colours kept in storage; agent request errors.');
+})().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});

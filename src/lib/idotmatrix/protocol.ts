@@ -19,6 +19,57 @@ export function crc32(data: Uint8Array) {
 }
 
 export const SCREEN_ON = Uint8Array.of(5, 0, 7, 1, 1);
+export const SCREEN_OFF = Uint8Array.of(5, 0, 7, 1, 0);
+export const MIN_HARDWARE_BRIGHTNESS = 5;
+export const MAX_HARDWARE_BRIGHTNESS = 100;
+
+const clampByte = (value: number | undefined, fallback = 0) =>
+  typeof value === "number" && Number.isFinite(value) ? Math.min(255, Math.max(0, Math.round(value))) : fallback;
+
+/** Clamps hardware LED brightness percentage to the vendor panel's 5..100 range. */
+export function clampHardwareBrightness(percent: number): number {
+  if (!Number.isFinite(percent)) return MAX_HARDWARE_BRIGHTNESS;
+  return Math.min(MAX_HARDWARE_BRIGHTNESS, Math.max(MIN_HARDWARE_BRIGHTNESS, Math.round(percent)));
+}
+
+/** Switches the panel's LED matrix on or off (`BleProtocolN.sendSwitchplate`). */
+export function buildSwitchplateCommand(on: boolean): Uint8Array {
+  return on ? SCREEN_ON : SCREEN_OFF;
+}
+
+/** Sets panel hardware global brightness 5..100% (`BleProtocolN.setLight`). */
+export function buildBrightnessCommand(percent: number): Uint8Array {
+  return Uint8Array.of(5, 0, 4, 128, clampHardwareBrightness(percent));
+}
+
+/** Flips the LED display orientation 180 degrees (`BleProtocolN.setRotate180`). */
+export function buildRotateCommand(flipped: boolean): Uint8Array {
+  return Uint8Array.of(5, 0, 6, 128, flipped ? 1 : 0);
+}
+
+/** Sets a solid fullscreen RGB colour (`BleProtocolN.sendColor`; 0,0,0 clears the panel). */
+export function buildColorCommand(r: number, g: number, b: number): Uint8Array {
+  return Uint8Array.of(7, 0, 2, 2, clampByte(r), clampByte(g), clampByte(b));
+}
+
+/** Syncs the panel's internal RTC clock (`BleProtocolN.synchronizedTime`, weekday 1..7 = Mon..Sun). */
+export function buildSyncTimeCommand(date: Date = new Date()): Uint8Array {
+  const year = Math.max(0, date.getFullYear() - 2000) & 0xff;
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const weekday = date.getDay() === 0 ? 7 : date.getDay();
+  return Uint8Array.of(11, 0, 1, 128, year, month, day, weekday, date.getHours(), date.getMinutes(), date.getSeconds());
+}
+
+/** Switches to the panel's onboard clock display (`BleProtocolN.sendClockMode`). */
+export function buildClockModeCommand(
+  style = 0,
+  options: { showDate?: boolean; hour24?: boolean; r?: number; g?: number; b?: number } = {}
+): Uint8Array {
+  const styleByte = (clampByte(style) & 0x07) | ((options.showDate ?? true) ? 0x80 : 0) | ((options.hour24 ?? true) ? 0x40 : 0);
+  return Uint8Array.of(8, 0, 6, 1, styleByte, clampByte(options.r, 255), clampByte(options.g, 255), clampByte(options.b, 255));
+}
+
 /** DIY ("draw") mode accepts single PNG frames. Entering it blanks the panel for ~200–400 ms (hardware). */
 export const DIY_MODE_ON = Uint8Array.of(5, 0, 4, 1, 1);
 

@@ -89,7 +89,18 @@ export class MatrixLink {
   }
 
   send(data: Uint8Array) {
-    return this.exclusive(() => this.writePacketed(data));
+    return this.exclusive(async () => {
+      const keepsDiy =
+        data.length >= 4 &&
+        (data[3] === 0x80 ||
+          (data.length >= 5 && data[2] === 7 && data[3] === 1 && data[4] === 1) ||
+          (data.length >= 5 && data[2] === 4 && data[3] === 1 && data[4] === 1));
+      if (!keepsDiy) {
+        if (this.framesInFlight > 0) await this.drainFrames();
+        this.mode = "unknown";
+      }
+      await this.writePacketed(data);
+    });
   }
 
   /** Never abandoned midway: a half-sent GIF leaves the firmware ignoring the next one (hardware). */
