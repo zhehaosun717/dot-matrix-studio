@@ -91,9 +91,9 @@ export class LiveFrameStream {
 
   private async pump() {
     while (this.pending || this.source) {
-      const generation = this.generation;
       const wait = this.lastAt + this.minIntervalMs - Date.now();
       if (wait > 0) await backgroundSleep(wait);
+      const generation = this.generation;
       const frame = this.nextFrame();
       if (!frame || generation !== this.generation) continue;
       if (sameFrame(this.lastSent, frame)) {

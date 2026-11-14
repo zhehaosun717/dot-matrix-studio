@@ -100,6 +100,22 @@ function stopMirror() {
 export const useMatrixStore = create<MatrixState>((set, get) => {
   const isCurrent = (link: MatrixLink) => get().link === link;
 
+  /** Drops a broken link after a fatal GATT/upload error so the user and auto-reconnect recover cleanly. */
+  const dropBrokenLink = (broken: MatrixLink, error: unknown) => {
+    if (!isCurrent(broken)) return;
+    liveRequest++;
+    stopMirror();
+    stream?.cancel();
+    stream = null;
+    set({
+      link: null,
+      live: "off",
+      lastDisconnect: "lost",
+      status: toErrorStatus(error, "upload-failed")
+    });
+    broken.disconnect();
+  };
+
   /** Puts the current agent scene on the panel; returns false when it cannot or should not. */
   const playAgent = () => {
     const { link, agentEnabled, agentScene } = get();
@@ -153,12 +169,7 @@ export const useMatrixStore = create<MatrixState>((set, get) => {
           const png = await encodePng(MATRIX_SIZE, MATRIX_SIZE, applyPanelTuning(rgb, get().tuning), { allowPalette: false });
           if (stillWanted()) await link.showFrame(png);
         }, {
-          onError: (error) => {
-            if (!isCurrent(link)) return;
-            liveRequest++;
-            stopMirror();
-            set({ live: "off", status: toErrorStatus(error, "upload-failed") });
-          }
+          onError: (error) => dropBrokenLink(link, error)
         });
         set({ link, status: { kind: "connected" }, lastDisconnect: null });
         playAgent();
@@ -191,7 +202,7 @@ export const useMatrixStore = create<MatrixState>((set, get) => {
         if (agentPaused && isCurrent(link)) set({ agentEnabled: false });
         update({ kind: "sent", missedAcks: result.missedAcks, agentPaused });
       } catch (error) {
-        update(toErrorStatus(error, "upload-failed"));
+        dropBrokenLink(link, error);
       }
     },
 
