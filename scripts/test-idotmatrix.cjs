@@ -15,7 +15,7 @@ const {MATRIX_SIZE, GIF_BUDGET_BYTES, MAX_GIF_FRAMES} = require('../src/lib/idot
 const {getMatrixLayout, renderMatrixFrames} = require('../src/lib/idotmatrix/render-frames.ts');
 const {encodeGif} = require('../src/lib/idotmatrix/gif-encoder.ts');
 const {buildMatrixGif} = require('../src/lib/idotmatrix/build-gif.ts');
-const {crc32, buildGifChunks, isGifAck, SCREEN_ON} = require('../src/lib/idotmatrix/protocol.ts');
+const {crc32, buildGifChunks, isGifAck, isGifErrorAck, SCREEN_ON} = require('../src/lib/idotmatrix/protocol.ts');
 const {MatrixLink} = require('../src/lib/idotmatrix/matrix-link.ts');
 const {MAX_GRID_SIZE} = require('../src/lib/grid-limits.ts');
 const {getCanvasGridMetrics, CANVAS_FRAME_INSET, CANVAS_GRID_PADDING} = require('../src/lib/canvas-grid-metrics.ts');
@@ -373,6 +373,9 @@ async function main() {
   assert.deepEqual(Buffer.concat(chunks.map(c => c.subarray(16))), Buffer.from(blob), 'payload preserved');
   assert.throws(() => buildGifChunks(new Uint8Array(0)));
   assert(isGifAck(Uint8Array.of(5, 0, 1, 0, 1)) && isGifAck(Uint8Array.of(5, 0, 1, 0, 3)));
+  assert(!isGifAck(Uint8Array.of(5, 0, 1, 0, 0)) && !isGifAck(Uint8Array.of(5, 0, 1, 0, 2)), 'GIF error codes are not success acks');
+  assert(isGifErrorAck(Uint8Array.of(5, 0, 1, 0, 0)) && isGifErrorAck(Uint8Array.of(5, 0, 1, 0, 2)));
+  assert(!isGifErrorAck(Uint8Array.of(5, 0, 1, 0, 1)) && !isGifErrorAck(Uint8Array.of(5, 0, 0, 0, 2)));
   assert(!isGifAck(Uint8Array.of(5, 0, 0, 0, 1)), 'image ack is not a GIF ack');
 
   // ------------------------------------------------------------ upload flow (fake GATT)
@@ -380,12 +383,17 @@ async function main() {
    * A fake panel: rejects packets above maxPacket, throws once on the write calls listed in failCalls
    * (or on every call from failFrom on), and acks each fully received chunk after ackDelays[chunk] ms (null = never).
    */
-  function fakePanel({maxPacket = 514, failCalls = [], failFrom = Infinity, ackDelays = []} = {}) {
+  function fakePanel({maxPacket = 514, failCalls = [], failFrom = Infinity, ackDelays = [], ackCodes = []} = {}) {
     const notify = new EventTarget();
     const writes = [], log = [];
     const failOnce = new Set(failCalls);
     let calls = 0, pending = 0, expected = null, chunk = 0;
-    const ack = index => { log.push(`ack${index}`); notify.value = new DataView(Uint8Array.of(5, 0, 1, 0, 1).buffer); notify.dispatchEvent(new Event('characteristicvaluechanged')); };
+    const ack = index => {
+      const code = ackCodes[index] ?? 1;
+      log.push((code === 1 || code === 3 ? 'ack' : 'err') + index);
+      notify.value = new DataView(Uint8Array.of(5, 0, 1, 0, code).buffer);
+      notify.dispatchEvent(new Event('characteristicvaluechanged'));
+    };
     const write = {
       async writeValueWithoutResponse(data) {
         const call = calls++;
@@ -466,6 +474,17 @@ async function main() {
   await cooledLink.uploadGif(blob);
   assert(Date.now() - t0 >= 100, 'back-to-back uploads respect the cooldown');
   assert.deepEqual(Array.from(SCREEN_ON), [5, 0, 7, 1, 1]);
+
+  // A GIF error response (05 00 01 00 02) triggers a clean restart from chunk 0 rather than pushing bad chunks.
+  const recoverable = fakePanel({ackCodes: [2, 1, 3]});
+  const recoverableRun = await upload(recoverable, blob, {...fastOptions, diySettleMs: 5});
+  assert.deepEqual(recoverableRun.result, {chunks: 2, missedAcks: 0}, 'error ack recovers via retry');
+  assert.deepEqual(recoverable.log, ['start0', 'err0', 'start1', 'ack1', 'start2', 'ack2']);
+
+  // Repeated error responses exhaust the retry and report the chunks as unacknowledged.
+  const broken = fakePanel({ackCodes: [0, 0, 0]});
+  const brokenRun = await upload(broken, blob, {...fastOptions, diySettleMs: 5});
+  assert.deepEqual(brokenRun.result, {chunks: 2, missedAcks: 2}, 'persistent error acks report missedAcks');
 
   console.log(`PASS: iDotMatrix layout + ${checks} preset budgets, render, lossless GIF round-trip incl. LZW table reset, BLE framing, retries, late acks, busy and cooldown.`);
 }

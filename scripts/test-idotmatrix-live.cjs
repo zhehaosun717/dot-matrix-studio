@@ -13,7 +13,7 @@ const {createMockProject} = require('../src/lib/mock-project.ts');
 const {getDefaultMotionConfig} = require('../src/lib/motion-presets.ts');
 const {MATRIX_SIZE} = require('../src/lib/idotmatrix/constants.ts');
 const {encodePng} = require('../src/lib/idotmatrix/png-encoder.ts');
-const {buildImageFrame, isImageAck, DIY_MODE_ON, crc32} = require('../src/lib/idotmatrix/protocol.ts');
+const {buildImageChunks, buildImageFrame, isImageAck, DIY_MODE_ON, crc32} = require('../src/lib/idotmatrix/protocol.ts');
 const {MatrixLink} = require('../src/lib/idotmatrix/matrix-link.ts');
 const {LiveFrameStream} = require('../src/lib/idotmatrix/live-stream.ts');
 const {renderMatrixStill, renderMatrixAt, renderMatrixFrames, getMatrixLayout} = require('../src/lib/idotmatrix/render-frames.ts');
@@ -62,7 +62,11 @@ function fakePanel({imageAcks = true, ackDelayMs = 5} = {}) {
     async writeValueWithoutResponse(data) {
       const bytes = new Uint8Array(data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength));
       writes.push(bytes);
-      if (expected === null) { expected = new DataView(bytes.buffer).getUint16(0, true); kind = bytes[2] === 1 && bytes.length >= 16 ? 'gif' : bytes.length > 9 && bytes[2] === 0 ? 'image' : 'cmd'; }
+      if (expected === null) {
+        expected = new DataView(bytes.buffer).getUint16(0, true);
+        kind = bytes[2] === 1 && bytes.length >= 16 ? 'gif' : bytes.length > 9 && bytes[2] === 0 ? 'image' : 'cmd';
+        if (kind === 'gif') log.push('gifStart');
+      }
       pending += bytes.length;
       if (pending < expected) return;
       const done = kind; pending = 0; expected = null;
@@ -125,6 +129,7 @@ async function main() {
   assert.deepEqual([...frame.subarray(0, 9)], [(309) & 255, 309 >> 8, 0, 0, 0, 44, 1, 0, 0], 'u16 packet length, 00 00, first flag, u32 PNG length');
   const big = buildImageFrame(new Uint8Array(5000));
   assert.equal(big.length, 5000 + 18, 'one 9-byte header per 4 KiB chunk');
+  assert.deepEqual(buildImageChunks(new Uint8Array(5000)).map(c => c.length), [4096 + 9, 904 + 9]);
   assert.deepEqual([big[4105 + 0], big[4105 + 1], big[4105 + 4]], [(904 + 9) & 255, (904 + 9) >> 8, 2], 'continuation chunk header');
   assert(isImageAck(Uint8Array.of(5, 0, 0, 0, 1)) && !isImageAck(Uint8Array.of(5, 0, 1, 0, 1)));
   assert.deepEqual([...DIY_MODE_ON], [5, 0, 4, 1, 1]);
@@ -197,6 +202,22 @@ async function main() {
   const tail = messages(racing.writes).map(m => (m.length >= 16 && m[2] === 1 ? 'gif' : m.length === 5 ? 'cmd' : 'img'));
   assert.equal(tail[tail.length - 1], 'gif', `the GIF is the last thing on the wire (${tail.join(' ')})`);
 
+  // An in-flight DIY frame's ack finishes draining before GIF chunk 0 goes out.
+  const drainPanel = fakePanel({ackDelayMs: 60});
+  const drainLink = new MatrixLink(drainPanel.gatt, {...fast, frameAckTimeoutMs: 200});
+  await drainLink.showFrame(png);
+  await drainLink.uploadGif(Uint8Array.from({length: 600}, (_, i) => i & 255));
+  const ackIdx = drainPanel.log.indexOf('ack0'), gifIdx = drainPanel.log.indexOf('gifStart');
+  assert(ackIdx >= 0 && gifIdx > ackIdx, `GIF upload drains the in-flight frame first (${drainPanel.log.join(' ')})`);
+
+  // Returning to DIY mode after a GIF upload respects the panel's cooldown.
+  const reenterPanel = fakePanel();
+  const reenterLink = new MatrixLink(reenterPanel.gatt, {...fast, cooldownMs: 120});
+  await reenterLink.uploadGif(Uint8Array.from({length: 400}, (_, i) => i & 255));
+  const beforeReenter = Date.now();
+  await reenterLink.showFrame(png);
+  assert(Date.now() - beforeReenter >= 100, `entering DIY after a GIF waits for cooldown (${Date.now() - beforeReenter} ms)`);
+
   // ------------------------------------------------------------ latest-frame-wins stream
   const pushed = [];
   const stream = new LiveFrameStream(async f => { pushed.push(f[0]); await sleep(30); }, {minIntervalMs: 0});
@@ -218,6 +239,17 @@ async function main() {
   failing.show(frameOf(1));
   await failing.idle();
   assert.deepEqual(errors, ['gone'], 'push errors are reported, not thrown');
+
+  // Cancelling and immediately showing a new frame while pump() sleeps for minIntervalMs still sends the new frame.
+  const raceSent = [];
+  const raceStream = new LiveFrameStream(async f => { raceSent.push(f[0]); }, {minIntervalMs: 80});
+  raceStream.play(() => frameOf(1));
+  await sleep(15);
+  raceStream.cancel();
+  raceStream.reset();
+  raceStream.show(frameOf(2));
+  await raceStream.idle();
+  assert.deepEqual(raceSent, [1, 2], 'initial frame after cancel during minIntervalMs sleep is not dropped');
 
   // ------------------------------------------------------------ pacing by time since the last write
   const timed = fakePanel();

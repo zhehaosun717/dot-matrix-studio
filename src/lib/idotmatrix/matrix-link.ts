@@ -1,4 +1,4 @@
-import { buildGifChunks, buildImageFrame, DIY_MODE_ON, isGifAck, isImageAck } from "@/lib/idotmatrix/protocol";
+import { buildGifChunks, buildImageChunks, DIY_MODE_ON, isGifAck, isGifErrorAck, isImageAck } from "@/lib/idotmatrix/protocol";
 import { backgroundSleep } from "@/lib/idotmatrix/background-timer";
 
 /** The GATT pieces MatrixLink needs; Web Bluetooth objects satisfy this shape. */
@@ -25,9 +25,7 @@ export type MatrixLinkOptions = {
   diySettleMs?: number;
   /**
    * Starting gap between the packets of a live frame; if lower than packetGapMs it backs off towards it when
-   * frame acks go missing (with the default both are 18 ms, so there is nothing to back off).
-   * Gap-less packets streamed fine from Python/bleak, but live sync from Web Bluetooth went black with them
-   * (v0.2.0 report), and acks did not reveal it, so the default stays at the proven 18 ms.
+   * frame acks go missing (with the default both are 20 ms, matching the vendor app).
    */
   framePacketGapMs?: number;
 };
@@ -38,20 +36,21 @@ type PanelMode = "unknown" | "diy" | "gif";
 /** 509 B is the vendor app's size for MTU 512+; smaller sizes cover links that negotiated less. */
 export const DEFAULT_PACKET_SIZES = [509, 182, 20] as const;
 const WRITE_RETRIES = 3;
+const GIF_UPLOAD_RETRIES = 1;
 const MAX_INBOX = 32;
 /** One frame in flight: waiting for every ack caps at ~2.6 fps, pipelining one gives ~9 fps (hardware). */
 const MAX_FRAMES_IN_FLIGHT = 1;
 /** A frame ack this late after its timeout is treated as stale rather than credited to a newer frame. */
 const LATE_ACK_GRACE_MS = 1000;
 const DEFAULT_OPTIONS: Required<MatrixLinkOptions> = {
-  packetGapMs: 18,
-  ackTimeoutMs: 3000,
+  packetGapMs: 20,
+  ackTimeoutMs: 5000,
   cooldownMs: 3000,
   packetSizes: DEFAULT_PACKET_SIZES,
   retryDelayMs: 50,
   frameAckTimeoutMs: 600,
   diySettleMs: 400,
-  framePacketGapMs: 18
+  framePacketGapMs: 20
 };
 const FRAME_GAP_BACKOFF_MS = 6;
 
@@ -109,29 +108,46 @@ export class MatrixLink {
   showFrame(png: Uint8Array) {
     return this.exclusive(async () => {
       if (this.mode !== "diy") {
+        await sleep(this.readyAt - Date.now());
         await this.writePacketed(DIY_MODE_ON);
         await sleep(this.options.diySettleMs);
         this.mode = "diy";
         this.framesInFlight = 0;
       }
-      await this.writePacketed(buildImageFrame(png), undefined, this.frameGapMs);
-      this.framesInFlight++;
-      while (this.framesInFlight > MAX_FRAMES_IN_FLIGHT) {
-        if (!(await this.waitFor(isImageAck, this.options.frameAckTimeoutMs))) {
-          // Its ack may still turn up; it must not then release a newer frame early.
-          this.staleImageAcks++;
-          // A lost ack can mean lost packets: give the panel more room between them.
-          this.frameGapMs = Math.min(this.options.packetGapMs, this.frameGapMs + FRAME_GAP_BACKOFF_MS);
-          this.staleImageAcksUntil = Date.now() + LATE_ACK_GRACE_MS;
+      const chunks = buildImageChunks(png);
+      if (chunks.length > 1) {
+        await this.drainFrames();
+        for (let i = 0; i < chunks.length - 1; i++) {
+          await this.writePacketed(chunks[i], undefined, this.frameGapMs);
+          this.framesInFlight++;
+          await this.drainFrames(0, false, this.options.ackTimeoutMs);
         }
-        this.framesInFlight--;
       }
+      await this.writePacketed(chunks[chunks.length - 1], undefined, this.frameGapMs);
+      this.framesInFlight++;
+      await this.drainFrames(MAX_FRAMES_IN_FLIGHT, true);
     });
   }
 
   disconnect() {
     this.gatt.notify.removeEventListener("characteristicvaluechanged", this.onNotify);
     this.gatt.disconnect();
+  }
+
+  /** Waits until at most `targetInFlight` DIY frame ACKs remain outstanding. */
+  private async drainFrames(targetInFlight = 0, backoffOnMiss = false, timeoutMs = this.options.frameAckTimeoutMs) {
+    while (this.framesInFlight > targetInFlight) {
+      if (!(await this.waitFor(isImageAck, timeoutMs))) {
+        // Its ack may still turn up; it must not then release a newer frame early.
+        this.staleImageAcks++;
+        if (backoffOnMiss) {
+          // A lost ack can mean lost packets: give the panel more room between them.
+          this.frameGapMs = Math.min(this.options.packetGapMs, this.frameGapMs + FRAME_GAP_BACKOFF_MS);
+        }
+        this.staleImageAcksUntil = Date.now() + LATE_ACK_GRACE_MS;
+      }
+      this.framesInFlight--;
+    }
   }
 
   /** Runs operations one at a time so GIF chunks and live frames never interleave on the wire. */
@@ -142,18 +158,38 @@ export class MatrixLink {
   }
 
   private async writeGif(gif: Uint8Array, onProgress?: (sent: number, total: number) => void): Promise<UploadResult> {
-    await sleep(this.readyAt - Date.now());
-    const chunks = buildGifChunks(gif);
-    let missedAcks = 0;
-    this.mode = "gif";
-    for (const [i, chunk] of chunks.entries()) {
-      // The panel acks a chunk only once it has all of it, so anything received before the
-      // last packet goes out is a late ack for an earlier, timed-out chunk.
-      await this.writePacketed(chunk, () => { this.inbox = []; });
-      if (!(await this.waitFor(isGifAck, this.options.ackTimeoutMs))) missedAcks++;
-      onProgress?.(i + 1, chunks.length);
+    try {
+      if (this.framesInFlight > 0) await this.drainFrames();
+      if (this.mode === "diy") await sleep(this.lastWriteAt + this.options.diySettleMs - Date.now());
+      await sleep(this.readyAt - Date.now());
+      const chunks = buildGifChunks(gif);
+      this.mode = "gif";
+      for (let attempt = 0; attempt <= GIF_UPLOAD_RETRIES; attempt++) {
+        let missedAcks = 0;
+        let retry = false;
+        for (const [i, chunk] of chunks.entries()) {
+          // The panel acks a chunk only once it has all of it, so anything received before the
+          // last packet goes out is a late ack for an earlier, timed-out chunk.
+          await this.writePacketed(chunk, () => { this.inbox = []; });
+          const reply = await this.waitFor((bytes) => isGifAck(bytes) || isGifErrorAck(bytes), this.options.ackTimeoutMs);
+          if (reply && isGifErrorAck(reply)) {
+            if (attempt < GIF_UPLOAD_RETRIES) {
+              await sleep(this.options.diySettleMs);
+              retry = true;
+              break;
+            }
+            missedAcks++;
+          } else if (!reply) {
+            missedAcks++;
+          }
+          onProgress?.(i + 1, chunks.length);
+        }
+        if (!retry) return { chunks: chunks.length, missedAcks };
+      }
+      return { chunks: chunks.length, missedAcks: chunks.length };
+    } finally {
+      this.readyAt = Date.now() + this.options.cooldownMs;
     }
-    return { chunks: chunks.length, missedAcks };
   }
 
   private onNotify = () => {

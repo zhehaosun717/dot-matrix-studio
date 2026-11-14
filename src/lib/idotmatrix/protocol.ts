@@ -25,10 +25,10 @@ export const DIY_MODE_ON = Uint8Array.of(5, 0, 4, 1, 1);
 const IMAGE_HEADER_BYTES = 9;
 
 /**
- * Frames a PNG for DIY mode: per 4 KiB chunk a 9-byte header of
- * uint16 packet length, 00 00, 00 first / 02 continuation, uint32 PNG length (DeskDot, hardware-verified).
+ * Splits a PNG into 4 KiB chunks, each with the 9-byte DIY header of
+ * uint16 chunk length, 00 00, 00 first / 02 continuation, uint32 PNG length (DeskDot, hardware-verified).
  */
-export function buildImageFrame(png: Uint8Array): Uint8Array {
+export function buildImageChunks(png: Uint8Array): Uint8Array[] {
   if (png.length === 0) throw new Error("PNG is empty");
   const parts: Uint8Array[] = [];
   for (let offset = 0; offset < png.length; offset += UPLOAD_CHUNK_BYTES) {
@@ -41,6 +41,15 @@ export function buildImageFrame(png: Uint8Array): Uint8Array {
     part.set(body, IMAGE_HEADER_BYTES);
     parts.push(part);
   }
+  return parts;
+}
+
+/**
+ * Frames a PNG for DIY mode: per 4 KiB chunk a 9-byte header of
+ * uint16 packet length, 00 00, 00 first / 02 continuation, uint32 PNG length (DeskDot, hardware-verified).
+ */
+export function buildImageFrame(png: Uint8Array): Uint8Array {
+  const parts = buildImageChunks(png);
   const frame = new Uint8Array(parts.reduce((sum, part) => sum + part.length, 0));
   parts.reduce((offset, part) => { frame.set(part, offset); return offset + part.length; }, 0);
   return frame;
@@ -75,7 +84,15 @@ export function buildGifChunks(gif: Uint8Array): Uint8Array[] {
   return chunks;
 }
 
-/** The panel answers every GIF chunk with 05 00 01 00 xx (01 more expected, 03/00 complete). */
+const isGifReply = (bytes: Uint8Array) =>
+  bytes.length >= 5 && bytes[0] === 5 && bytes[1] === 0 && bytes[2] === 1 && bytes[3] === 0;
+
+/** The panel answers every GIF chunk with 05 00 01 00 xx (01 more expected, 03 complete). */
 export function isGifAck(bytes: Uint8Array) {
-  return bytes.length >= 5 && bytes[0] === 5 && bytes[1] === 0 && bytes[2] === 1 && bytes[3] === 0;
+  return isGifReply(bytes) && (bytes[4] === 1 || bytes[4] === 3);
+}
+
+/** The panel signals a GIF chunk/transfer error with 05 00 01 00 00 or 05 00 01 00 02. */
+export function isGifErrorAck(bytes: Uint8Array) {
+  return isGifReply(bytes) && (bytes[4] === 0 || bytes[4] === 2);
 }
