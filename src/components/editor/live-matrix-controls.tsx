@@ -25,6 +25,10 @@ export function LiveMatrixControls({ language }: LiveMatrixControlsProps) {
   const disconnect = useMatrixStore((state) => state.disconnect);
   const agentEnabled = useMatrixStore((state) => state.agentEnabled);
   const setAgentEnabled = useMatrixStore((state) => state.setAgentEnabled);
+  const screenOn = useMatrixStore((state) => state.screenOn);
+  const flipped180 = useMatrixStore((state) => state.hardware.flipped180);
+  const setScreenOn = useMatrixStore((state) => state.setScreenOn);
+  const setFlipped180 = useMatrixStore((state) => state.setFlipped180);
   const sendGif = useMatrixStore((state) => state.sendGif);
   const project = useEditorStore((state) => state.project);
   const loader = useSelectedLoader();
@@ -104,6 +108,30 @@ export function LiveMatrixControls({ language }: LiveMatrixControlsProps) {
       </Button>
       <Button type="button" className="toolbar-button" variant="outline" size="default" disabled={busy} title={statusText} onClick={saveToPanel}>
         {copy.saveToPanel}
+      </Button>
+      <Button
+        type="button"
+        className={`toolbar-button${flipped180 ? " is-live" : ""}`}
+        variant="outline"
+        size="default"
+        disabled={busy}
+        title={statusText}
+        aria-pressed={flipped180}
+        onClick={() => void setFlipped180(!flipped180)}
+      >
+        {copy.flip180}
+      </Button>
+      <Button
+        type="button"
+        className={`toolbar-button${!screenOn ? " is-live" : ""}`}
+        variant="outline"
+        size="default"
+        disabled={busy}
+        title={statusText}
+        aria-pressed={!screenOn}
+        onClick={() => void setScreenOn(!screenOn)}
+      >
+        {screenOn ? copy.screenOff : copy.screenOn}
       </Button>
       <Button type="button" className="toolbar-button" variant="outline" size="default" disabled={busy} title={statusText} onClick={disconnect}>
         {copy.disconnect}

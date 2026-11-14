@@ -19,6 +19,11 @@ export const matrixCopy = {
     liveScreenStop: "停止投屏",
     agentDisplay: "Agent 显示",
     saveToPanel: "存到屏幕",
+    screenOn: "亮屏",
+    screenOff: "息屏",
+    flip180: "旋转 180°",
+    clearPanel: "纯黑清屏",
+    hardwareClock: "板载时钟",
     overBudget: "GIF 超过 40 KB，屏幕播放可能会卡顿，可以减少序列帧数。",
     unsupported: "当前浏览器不支持 Web Bluetooth。请用桌面版 Chrome 或 Edge 打开，或先下载 GIF。"
   },
@@ -39,6 +44,11 @@ export const matrixCopy = {
     liveScreenStop: "Stop Mirror",
     agentDisplay: "Agent Display",
     saveToPanel: "Save to Panel",
+    screenOn: "Screen On",
+    screenOff: "Screen Off",
+    flip180: "Flip 180°",
+    clearPanel: "Clear (Black)",
+    hardwareClock: "Clock Mode",
     overBudget: "GIF is over 40 KB and may play sluggishly; try fewer sequence frames.",
     unsupported: "This browser has no Web Bluetooth. Open the editor in desktop Chrome or Edge, or download the GIF."
   }
